@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Play, Undo2 } from 'lucide-react';
+import { Check, Play, Undo2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { WorkspaceBadge } from '../components/WorkspaceBadge';
@@ -136,12 +136,6 @@ export function Project() {
         ))}
       </div>
 
-      <div className="mt-8 text-xs text-text-dim">
-        <a href={`/legacy/projects/${id}/subtasks`} className="text-accent hover:underline inline-flex items-center gap-1">
-          <ArrowLeft className="w-3 h-3" />
-          Other tabs (subtasks list, decisions, dead ends, notes, plans, context, timeline, analytics, drafts) — still on legacy templates while v0.2 migration is in progress
-        </a>
-      </div>
     </div>
   );
 }
