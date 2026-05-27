@@ -1,0 +1,16 @@
+# GitHub adds a "Sponsor" button to the repo when this file exists.
+# Each entry below renders as a link in the dropdown. Uncomment lines
+# once the corresponding account is configured.
+
+# GitHub Sponsors username (set up at https://github.com/sponsors)
+github: numbererikson
+
+# Buy Me a Coffee / Ko-fi / etc — uncomment if/when configured
+# buy_me_a_coffee: shinobi
+# ko_fi: shinobi
+
+# Open Collective — uncomment if/when configured
+# open_collective: shinobi
+
+# Custom URL — last resort, links straight to a payment page
+# custom: ["https://shinobi.dev/sponsor"]

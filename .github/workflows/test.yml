@@ -1,0 +1,32 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (triggers prepare → dashboard-spa install + build)
+        run: npm ci
+
+      - name: Smoke — direct tool invocation
+        run: npm run smoke:tools
+
+      - name: Smoke — MCP stdio transport
+        run: npm run smoke:mcp
+
+      - name: Smoke — dashboard HTTP endpoints
+        run: npm run smoke:dashboard

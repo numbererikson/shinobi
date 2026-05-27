@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "shinobi": {
+      "command": "shinobi",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

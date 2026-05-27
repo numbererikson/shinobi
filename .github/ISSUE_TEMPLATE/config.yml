@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussion / question
+    url: https://github.com/numbererikson/shinobi/discussions
+    about: Ask a question or chat about Shinobi (please don't open issues for questions)
+  - name: Documentation
+    url: https://github.com/numbererikson/shinobi/tree/main/docs
+    about: Walkthroughs for setup, remote access, plugins, embedding providers, and more

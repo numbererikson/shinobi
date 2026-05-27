@@ -1,0 +1,18 @@
+name = "shinobi-relay"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[durable_objects.bindings]]
+name = "WORKSPACES"
+class_name = "WorkspaceRelay"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["WorkspaceRelay"]
+
+# Set SHINOBI_RELAY_TOKEN as a secret (shared with all agents):
+#   wrangler secret put SHINOBI_RELAY_TOKEN
+# Then in each agent's ~/.shinobi/.env:
+#   SHINOBI_RELAY_URL=wss://shinobi-relay.<your-account>.workers.dev
+#   SHINOBI_RELAY_TOKEN=<the same secret>
+#   SHINOBI_RELAY_WORKSPACE=<any string, e.g. "personal" or "team-alpha">

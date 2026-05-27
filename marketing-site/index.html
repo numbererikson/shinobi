@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shinobi — local-first task spine for AI coding agents</title>
+<meta name="description" content="Local SQLite + MCP task management your AI agents share across sessions. Decisions stay. Dead-ends remembered. Approvals from your phone." />
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<link rel="stylesheet" href="/styles.css" />
+<meta property="og:title" content="Shinobi — local-first task spine for AI coding agents" />
+<meta property="og:description" content="Your AI agents share one task list, one decision log, one dead-ends ledger. Local SQLite. Optional mobile approvals." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://shinobi.numbererikson.workers.dev" />
+</head>
+<body>
+<header>
+  <nav>
+    <a href="/" class="brand">Shinobi <span>🥷</span></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#pricing">Pricing</a>
+      <a href="https://github.com/numbererikson/shinobi" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <h1>One task list your agents actually share.</h1>
+  <p class="lead">
+    Shinobi is a local SQLite + MCP task spine. Claude Code, Cursor, and your custom agents
+    all read the same project, log the same decisions, and respect the same dead-ends —
+    across sessions, across machines, across the room from your phone.
+  </p>
+  <div class="cta">
+    <a href="#install" class="btn primary">Install in 60s</a>
+    <a href="https://github.com/numbererikson/shinobi" class="btn ghost" target="_blank" rel="noreferrer">Star on GitHub</a>
+  </div>
+  <pre class="install-snippet">npm install -g github:numbererikson/shinobi
+shinobi init
+shinobi dashboard</pre>
+</section>
+
+<section id="features">
+  <h2>What it does</h2>
+  <div class="grid">
+    <article>
+      <h3>Shared task spine</h3>
+      <p>Every AI agent claims tasks, marks them complete, and sees the others' progress through one MCP server. No more "did Cursor already do this?"</p>
+    </article>
+    <article>
+      <h3>Decision log</h3>
+      <p>"We picked Postgres over MongoDB because…" lives in the project memory. Next session's agent reads it before suggesting MongoDB again.</p>
+    </article>
+    <article>
+      <h3>Dead-ends ledger</h3>
+      <p>What you've already tried and ruled out. Agents check it before proposing the same broken approach for the third time.</p>
+    </article>
+    <article>
+      <h3>Mobile approvals</h3>
+      <p>Agent hits a fork? <code>request_approval</code> pushes a notification to your phone with action buttons. Reply from the beach.</p>
+    </article>
+    <article>
+      <h3>Voice capture</h3>
+      <p>Talk into the dashboard PWA, get a transcript + auto-extracted decisions. Or upload a meeting recording and Shinobi drafts decisions for review.</p>
+    </article>
+    <article>
+      <h3>Multi-agent real-time</h3>
+      <p>Two laptops, two agents, one workspace: the Cloudflare Worker relay broadcasts sync events. Whoever pushes, everyone pulls within ~1.5s.</p>
+    </article>
+  </div>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <p>Shinobi is a Node CLI. Works on macOS, Linux, and Windows. Zero cloud accounts required for the local version.</p>
+  <pre class="install-snippet wide">
+# 1. Install
+npm install -g github:numbererikson/shinobi
+
+# 2. Bootstrap (creates ~/.shinobi/ and drops .mcp.json into the current directory)
+cd /your/project
+shinobi init
+
+# 3. Start the dashboard
+shinobi dashboard
+# → http://localhost:8765
+
+# 4. Restart your AI client. Claude Code / Cursor / Claude Desktop will see
+# the new tools via the .mcp.json that init dropped.
+  </pre>
+  <p class="note">
+    See <a href="https://github.com/numbererikson/shinobi#readme" target="_blank" rel="noreferrer">the README</a>
+    for sync setup, mobile push, voice capture, and the rest.
+  </p>
+</section>
+
+<section id="pricing">
+  <h2>Pricing</h2>
+  <p class="lead-sm">Self-hosted is free forever. Hosted SaaS pricing below is for the
+    convenience of running it for you, with managed Postgres + per-tenant SQLite snapshots.</p>
+
+  <div class="grid plans">
+    <article class="plan">
+      <h3>Self-hosted</h3>
+      <p class="price">$0</p>
+      <ul>
+        <li>Unlimited everything</li>
+        <li>Local SQLite + optional git sync</li>
+        <li>Multi-machine via git, real-time via Cloudflare Worker relay</li>
+        <li>Community support (GitHub issues)</li>
+      </ul>
+      <a href="#install" class="btn primary">Install free</a>
+    </article>
+    <article class="plan">
+      <h3>Team</h3>
+      <p class="price">$19<span>/mo</span></p>
+      <ul>
+        <li>Up to 5 users</li>
+        <li>Unlimited projects</li>
+        <li>Hosted cloud — no laptop needed</li>
+        <li>Email support, 5 business days</li>
+      </ul>
+      <a href="mailto:contact@shinobi-apps.hr?subject=Shinobi Team plan — early access" class="btn ghost">Join waitlist</a>
+    </article>
+    <article class="plan">
+      <h3>Pro</h3>
+      <p class="price">$79<span>/mo</span></p>
+      <ul>
+        <li>Unlimited users + projects</li>
+        <li>Private plugin marketplace</li>
+        <li>Priority email, 1 business day</li>
+        <li>Availability SLA</li>
+      </ul>
+      <a href="mailto:contact@shinobi-apps.hr?subject=Shinobi Pro plan — early access" class="btn ghost">Join waitlist</a>
+    </article>
+  </div>
+</section>
+
+<section id="open-source">
+  <h2>Built in the open</h2>
+  <p>
+    MIT-licensed. Roadmap in
+    <a href="https://github.com/numbererikson/shinobi" target="_blank" rel="noreferrer">the repo</a>.
+    The hosted SaaS keeps the same MCP tools + dashboard + migrations as self-hosted —
+    you can <strong>always export your data</strong> and run it locally.
+  </p>
+</section>
+</main>
+
+<footer>
+  <p>© <span id="year"></span> Shinobi. <a href="https://github.com/numbererikson/shinobi" target="_blank" rel="noreferrer">github</a> · <a href="https://github.com/numbererikson/shinobi/issues" target="_blank" rel="noreferrer">issues</a></p>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "2f7eba35ce3d4e798a04ee07e549adb8"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

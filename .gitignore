@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.shinobi/
+.shinobi-test/
+.env
+*.log
+*.tgz
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.tsbuildinfo
+coverage/
+
+# Claude Code personal overrides
+.claude/settings.local.json
+
+# Internal launch notes (private to repo owner)
+LAUNCH_PLAN.md

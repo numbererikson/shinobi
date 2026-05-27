@@ -1,0 +1,88 @@
+{
+  "name": "shinobi-vscode",
+  "displayName": "Shinobi",
+  "description": "Status bar + sidebar + commands for the Shinobi task spine.",
+  "version": "0.1.0",
+  "publisher": "shinobi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/numbererikson/shinobi"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "shinobi.openDashboard", "title": "Shinobi: Open Dashboard" },
+      { "command": "shinobi.claimTask", "title": "Shinobi: Claim Task..." },
+      { "command": "shinobi.completeActiveTask", "title": "Shinobi: Complete Active Task" },
+      { "command": "shinobi.logDecision", "title": "Shinobi: Log Decision..." },
+      { "command": "shinobi.refresh", "title": "Shinobi: Refresh", "icon": "$(refresh)" },
+      { "command": "shinobi.pickProject", "title": "Shinobi: Pick Active Project..." }
+    ],
+    "views": {
+      "shinobi": [
+        { "id": "shinobi.tasks", "name": "Tasks" },
+        { "id": "shinobi.decisions", "name": "Recent Decisions" },
+        { "id": "shinobi.deadEnds", "name": "Dead Ends" }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "shinobi",
+          "title": "Shinobi",
+          "icon": "$(target)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        { "command": "shinobi.refresh", "when": "view == shinobi.tasks", "group": "navigation" },
+        { "command": "shinobi.pickProject", "when": "view == shinobi.tasks", "group": "navigation" }
+      ]
+    },
+    "configuration": {
+      "title": "Shinobi",
+      "properties": {
+        "shinobi.dashboardUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8765",
+          "description": "Base URL of the local Shinobi dashboard (started with `shinobi dashboard`)."
+        },
+        "shinobi.token": {
+          "type": "string",
+          "default": "",
+          "description": "Optional dashboard auth token. Only required when dashboard auth is forced on."
+        },
+        "shinobi.activeProjectId": {
+          "type": "number",
+          "default": 0,
+          "description": "Currently focused project ID. Set via the 'Shinobi: Pick Active Project' command."
+        },
+        "shinobi.pollSeconds": {
+          "type": "number",
+          "default": 5,
+          "minimum": 2,
+          "description": "How often to refresh status bar + tree views (seconds)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -p ./ -w",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package",
+    "package:cursor": "npm run build && node scripts/build-cursor.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.7.0"
+  }
+}
