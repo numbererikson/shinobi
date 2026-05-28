@@ -70,7 +70,7 @@ export function Settings() {
     try {
       const result = await patchSettings(draft);
       if (!result.ok) throw new Error(result.error ?? 'unknown error');
-      const restartHints = Object.keys(draft).filter((k) => specs.find((s) => s.key === k)?.requiresRestart);
+      const restartHints = Object.keys(draft).filter((k) => specs?.find((s) => s.key === k)?.requiresRestart);
       const msg = `wrote ${result.written ?? 0}, cleared ${result.cleared ?? 0}${restartHints.length > 0 ? ` (restart required: ${restartHints.join(', ')})` : ''}`;
       setToast({ kind: 'ok', text: msg });
       await load();

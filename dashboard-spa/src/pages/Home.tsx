@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Archive, ChevronDown, ChevronRight } from 'lucide-react';
 import { WorkspaceBadge } from '../components/WorkspaceBadge';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { timeSince } from '../lib/format';
 import type { Project } from '../lib/types';
+
+const WORKSPACE_FILTER_KEY = 'shinobi.home.workspaceFilter';
+const ALL_WORKSPACES = '__all__';
+const NO_WORKSPACE = '__none__';
 
 interface OutletCtx {
   projects: Project[];
@@ -51,9 +55,40 @@ function ProjectsTable({ rows, dim = false }: { rows: Project[]; dim?: boolean }
 
 export function Home() {
   const { projects } = useOutletContext<OutletCtx>();
-  const active = projects.filter((p) => !p.archived_at);
-  const archived = projects.filter((p) => p.archived_at);
   const [showArchived, setShowArchived] = useState(false);
+  const [workspaceFilter, setWorkspaceFilter] = useState<string>(() => {
+    if (typeof window === 'undefined') return ALL_WORKSPACES;
+    return window.localStorage.getItem(WORKSPACE_FILTER_KEY) ?? ALL_WORKSPACES;
+  });
+
+  const workspaces = useMemo(() => {
+    const seen = new Set<string>();
+    let hasNoWorkspace = false;
+    for (const p of projects) {
+      if (p.workspace) seen.add(p.workspace);
+      else hasNoWorkspace = true;
+    }
+    const sorted = Array.from(seen).sort((a, b) => a.localeCompare(b));
+    return { named: sorted, hasNoWorkspace };
+  }, [projects]);
+
+  function applyFilter(rows: Project[]) {
+    if (workspaceFilter === ALL_WORKSPACES) return rows;
+    if (workspaceFilter === NO_WORKSPACE) return rows.filter((p) => !p.workspace);
+    return rows.filter((p) => p.workspace === workspaceFilter);
+  }
+
+  const active = applyFilter(projects.filter((p) => !p.archived_at));
+  const archived = applyFilter(projects.filter((p) => p.archived_at));
+
+  function onWorkspaceChange(next: string) {
+    setWorkspaceFilter(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(WORKSPACE_FILTER_KEY, next);
+    }
+  }
+
+  const showFilter = workspaces.named.length > 1 || (workspaces.named.length >= 1 && workspaces.hasNoWorkspace);
 
   return (
     <div>
@@ -64,9 +99,43 @@ export function Home() {
         </span>
       </header>
 
+      {showFilter && (
+        <div className="flex items-center gap-2 mb-4">
+          <label htmlFor="workspace-filter" className="text-[11px] uppercase tracking-wider text-text-muted">
+            Workspace
+          </label>
+          <select
+            id="workspace-filter"
+            value={workspaceFilter}
+            onChange={(e) => onWorkspaceChange(e.target.value)}
+            className="bg-panel border border-border rounded px-2 py-1 text-sm text-text hover:border-accent/60 focus:outline-none focus:border-accent"
+          >
+            <option value={ALL_WORKSPACES}>All workspaces</option>
+            {workspaces.named.map((w) => (
+              <option key={w} value={w}>{w}</option>
+            ))}
+            {workspaces.hasNoWorkspace && (
+              <option value={NO_WORKSPACE}>(no workspace)</option>
+            )}
+          </select>
+          {workspaceFilter !== ALL_WORKSPACES && (
+            <button
+              onClick={() => onWorkspaceChange(ALL_WORKSPACES)}
+              className="text-xs text-text-muted hover:text-text"
+            >
+              clear
+            </button>
+          )}
+        </div>
+      )}
+
       {projects.length === 0 ? (
         <div className="bg-panel border border-dashed border-border rounded p-6 text-center text-text-muted">
           No projects yet. Create one via the <code>create_project</code> MCP tool, then refresh.
+        </div>
+      ) : active.length === 0 ? (
+        <div className="bg-panel border border-dashed border-border rounded p-6 text-center text-text-muted">
+          No active projects match this workspace filter.
         </div>
       ) : (
         <ProjectsTable rows={active} />
