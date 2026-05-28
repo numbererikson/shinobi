@@ -252,6 +252,13 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs welcome.
 
+By participating you agree to our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+For vulnerability reports, see [SECURITY.md](SECURITY.md) — please do
+**not** open public issues for security matters.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
