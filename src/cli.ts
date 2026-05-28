@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { argv, env, exit, stderr, stdout } from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { readEnvFile } from './dashboard/settings-store.js';
 
 // Hydrate process.env from ~/.shinobi/.env so that settings written via the
@@ -27,6 +30,16 @@ import { startMcpServer } from './server/mcp.js';
 const COMMANDS = ['init', 'mcp', 'dashboard', 'migrate', 'sync', 'cost', 'digest'] as const;
 type Command = (typeof COMMANDS)[number];
 
+function readVersion(): string {
+  try {
+    const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { version?: string };
+    return pkg.version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 function printUsage(): void {
   stdout.write(`shinobi — local-first task spine + memory layer for AI coding agents
 
@@ -48,9 +61,9 @@ Commands:
   digest --since YYYY-MM-DD --until YYYY-MM-DD   Custom window (otherwise last 7 days)
 
 Options:
+  --version, -v                   Print the installed shinobi version and exit
+  --help, -h                      Print this help and exit
   --force                         For \`init\`, overwrite an existing .mcp.json or .env
-
-Run \`shinobi --help\` to see this help.
 `);
 }
 
@@ -161,6 +174,11 @@ async function main(): Promise<void> {
 
   if (!rawCommand || rawCommand === '--help' || rawCommand === '-h') {
     printUsage();
+    return;
+  }
+
+  if (rawCommand === '--version' || rawCommand === '-v') {
+    stdout.write(`shinobi ${readVersion()}\n`);
     return;
   }
 
