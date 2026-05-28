@@ -5,42 +5,16 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1] — 2026-05-28
-
-Pre-launch polish pass.
-
-### Added
-
-- **Command palette** in dashboard — open with `Ctrl+K` / `Cmd+K` or the
-  new "Search..." button at the top of the sidebar. Searches across
-  projects, tasks, decisions, dead ends, and notes in one place; results
-  are grouped by kind and link to the most-specific page. Backed by a
-  new `GET /api/recall` endpoint that fans out to the existing FTS5
-  search functions.
-- **Workspace filter** on the Home page projects table. Appears whenever
-  the loaded set spans more than one workspace; persisted to
-  `localStorage` so the choice survives reloads.
-- **`shinobi --version` / `-v`** flag, reading the installed version
-  from `package.json`. Help text now lists all top-level options.
-
-### Fixed
-
-- Dashboard build was failing on `main` due to two latent TypeScript
-  errors (TS 5.7 strictness on `Uint8Array<ArrayBufferLike>` in
-  `Push.tsx`, null-narrowing on `specs` inside a closure in
-  `Settings.tsx`). Both repaired; `npm install -g @shinobiapps/shinobi`
-  now works cleanly on every Node 18+ host we have tested.
-
-## [0.1.0] — 2026-06-03
+## [0.1.1] — 2026-06-03
 
 First public release.
 
 ### Added
 
-- **MCP server** with 34 tools covering projects, subtasks, decisions,
+- **MCP server** with 37 tools covering projects, subtasks, decisions,
   dead-ends, notes, plans, context, recall, history, git linking, workflow
-  helpers (`agent_bootstrap`, `session_closeout`), extraction (LLM-powered
-  decision drafts, session summaries), and approvals.
+  helpers (`agent_bootstrap`, `session_closeout`, `file_context`), extraction
+  (LLM-powered decision drafts, session summaries), and approvals.
 - **Local SQLite store** at `~/.shinobi/shinobi.db` with WAL mode, foreign
   keys, FTS5 virtual tables for fulltext search, optional embedding BLOBs
   for semantic recall.
@@ -48,6 +22,14 @@ First public release.
   dead-ends, notes, plans, context, timeline, analytics, drafts, sessions,
   voice capture, mobile push approvals, plugin marketplace, multi-agent
   relay status.
+- **Command palette** in the dashboard — open with `Ctrl+K` / `Cmd+K` or
+  the "Search..." button at the top of the sidebar. Searches across
+  projects, tasks, decisions, dead ends, and notes; backed by
+  `GET /api/recall` fanning out to the FTS5 search functions.
+- **Workspace filter** on the Home page projects table. Appears whenever
+  the loaded set spans more than one workspace; persisted to `localStorage`.
+- **`shinobi --version` / `-v`** flag, reading the installed version
+  from `package.json`. Help text lists all top-level options.
 - **React + Vite + Tailwind SPA** for the dashboard with mobile-responsive
   layout and PWA manifest (installable on iOS / Android home screen).
 - **Plugin system** discovering custom MCP tools from
@@ -63,7 +45,8 @@ First public release.
 - **Mobile push approvals** — `request_approval` MCP tool with Web Push
   notification + action buttons, agent unblocks on response.
 - **Voice capture** — PWA records or accepts uploaded audio, transcribes
-  via Whisper (BYO key), drafts decisions via LLM extractor for review.
+  via Whisper (default Groq `whisper-large-v3`, fallback OpenAI; BYO key),
+  drafts decisions via LLM extractor for review.
 - **GitHub integration** — `link_commit` MCP tool, webhook receiver for
   PR linking via `[SHI-N]` tags or `target_path` attribution.
 - **Session cost tracking** — per-session input/output token tallies for
@@ -77,7 +60,8 @@ First public release.
 
 ### Distribution
 
-- `npm install -g github:numbererikson/shinobi` installs the CLI globally.
+- `npm install -g @shinobiapps/shinobi` installs the CLI globally.
+- `npm install -g github:numbererikson/shinobi` installs from `main`.
 - MIT license.
 - Node.js 18+ required; better-sqlite3 ships prebuilt binaries for
   Linux / macOS / Windows.
@@ -93,4 +77,4 @@ First public release.
   chain (esbuild via vite via vitest, dev server only — not in the
   shipped runtime). Tracked for v0.2 vite upgrade.
 
-[0.1.0]: https://github.com/numbererikson/shinobi/releases/tag/v0.1.0
+[0.1.1]: https://github.com/numbererikson/shinobi/releases/tag/v0.1.1

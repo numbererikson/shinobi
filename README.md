@@ -8,7 +8,7 @@ Local-first task spine + memory layer for AI coding agents.
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
-> **Status:** v0.1 — feature-complete first release. MCP server with 34 tools, web dashboard, plugin system, cross-machine sync, optional semantic recall.
+> **Status:** v0.1 — feature-complete first release. MCP server with 37 tools, web dashboard, plugin system, cross-machine sync, optional semantic recall.
 
 ## What it does
 
@@ -123,7 +123,7 @@ Commands:
   sync status                     Show last push/pull timestamps and git status
 ```
 
-## MCP tools (34)
+## MCP tools (37)
 
 | Group | Tools |
 |---|---|
@@ -137,6 +137,8 @@ Commands:
 | Recall | recall (FTS5 or semantic) |
 | Timeline | history, link_commit |
 | Workflow | agent_bootstrap, session_closeout, file_context |
+| Extraction | extract_decisions, compress_session_summary |
+| Approvals | request_approval |
 | Plugins | plugin_hello |
 
 ## Architecture
