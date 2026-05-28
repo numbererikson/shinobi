@@ -26,7 +26,7 @@ but uses Claude Code. Goal: get them to `npm install -g …`.
 ### Take (2:30 target)
 1. **0:00 — install**
    ```sh
-   npm install -g github:numbererikson/shinobi
+   npm install -g @shinobiapps/shinobi
    cd ~/example-project
    shinobi init
    ```

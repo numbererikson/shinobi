@@ -49,7 +49,7 @@ points marked in PT for HN visibility)
   dashboard that gives the agent a persistent task spine and
   decision log.
 
-  - Install: npm install -g github:numbererikson/shinobi
+  - Install: npm install -g @shinobiapps/shinobi
   - Self-host free forever (MIT)
   - Optional: web push approvals from your phone, multi-agent
     Cloudflare relay, voice meeting capture, GitHub PR linking,
