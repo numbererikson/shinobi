@@ -34,22 +34,27 @@ All local. SQLite. No cloud account required (BYO embedding provider only if you
 Requirements:
 
 - Node.js 18+ on `PATH`
-- Git
 - C++ build toolchain for `better-sqlite3` native build (most systems have prebuilt binaries; Windows may need [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) as fallback)
 
-### From GitHub (recommended)
+### From npm (recommended)
+
+```bash
+npm install -g @shinobiapps/shinobi
+```
+
+The binary is `shinobi` (e.g. `shinobi serve`, `shinobi dashboard`).
+
+### From GitHub (latest, unreleased)
 
 ```bash
 npm install -g github:numbererikson/shinobi
 ```
 
-The `prepare` script auto-builds `dist/` during install, so this works out of the box.
-
-### From a release tarball
-
-```bash
-npm install -g ./shinobi-0.1.0.tgz
-```
+Pulls from `main`. Useful for trying unreleased fixes. On Windows you may need
+to add your Node directory to system `PATH` before this works, because the
+`prepare` build script runs in a subshell that does not always inherit
+per-session `PATH` (Laragon, portable installs). If install fails with `'node'
+is not recognized`, prefer the npm install above.
 
 ### From a cloned source folder (for development / contributing)
 
