@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 
-Local-first task spine + memory layer for AI coding agents.
+Your AI coding agent forgets every session. Shinobi is the fix — local SQLite + MCP, decisions stick, dead-ends stay logged, approvals come to your phone.
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
