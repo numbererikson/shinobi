@@ -5,6 +5,32 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-05-28
+
+Pre-launch polish pass.
+
+### Added
+
+- **Command palette** in dashboard — open with `Ctrl+K` / `Cmd+K` or the
+  new "Search..." button at the top of the sidebar. Searches across
+  projects, tasks, decisions, dead ends, and notes in one place; results
+  are grouped by kind and link to the most-specific page. Backed by a
+  new `GET /api/recall` endpoint that fans out to the existing FTS5
+  search functions.
+- **Workspace filter** on the Home page projects table. Appears whenever
+  the loaded set spans more than one workspace; persisted to
+  `localStorage` so the choice survives reloads.
+- **`shinobi --version` / `-v`** flag, reading the installed version
+  from `package.json`. Help text now lists all top-level options.
+
+### Fixed
+
+- Dashboard build was failing on `main` due to two latent TypeScript
+  errors (TS 5.7 strictness on `Uint8Array<ArrayBufferLike>` in
+  `Push.tsx`, null-narrowing on `specs` inside a closure in
+  `Settings.tsx`). Both repaired; `npm install -g @shinobiapps/shinobi`
+  now works cleanly on every Node 18+ host we have tested.
+
 ## [0.1.0] — 2026-06-03
 
 First public release.
