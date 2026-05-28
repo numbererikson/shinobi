@@ -7,18 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.2] — 2026-05-28
 
-### Fixed
+First publicly installable release.
 
-- `/health` endpoint returning hardcoded `"0.1.0"` instead of the installed
-  package version. Root cause: the published `0.1.1` tarball shipped a stale
-  `dist/` containing both an older hardcoded `/health` route and the
-  corrected one — Hono matches the first match, so the hardcode won.
-- Added `prepublishOnly` script that wipes `dist/` and runs a clean rebuild
-  so a stale-artifact publish cannot recur.
-
-## [0.1.1] — 2026-06-03
-
-First public release.
+(Note: `0.1.1` was published earlier the same day but shipped a stale
+`dist/` that left an older hardcoded `/health` route alongside the
+corrected one. Hono matched the hardcode first, so the endpoint always
+returned `version: "0.1.0"`. `0.1.2` is the immediate hotfix and the
+de-facto launch artifact. The launch announcement on Product Hunt /
+Hacker News is scheduled for **2026-06-03**.)
 
 ### Added
 
@@ -69,6 +65,15 @@ First public release.
 - **Forward-only SQL migrations** with checksum verification and adopt /
   dry-run / verify CLI flags.
 
+### Fixed (relative to the broken 0.1.1 publish)
+
+- `/health` endpoint returning hardcoded `"0.1.0"` instead of the
+  installed version. Root cause: the 0.1.1 tarball shipped a stale
+  `dist/` containing both an older hardcoded `/health` route and the
+  corrected one — Hono matches the first match, so the hardcode won.
+- Added `prepublishOnly` script that wipes `dist/` and runs a clean
+  rebuild before every publish, so a stale-artifact publish cannot recur.
+
 ### Distribution
 
 - `npm install -g @shinobiapps/shinobi` installs the CLI globally.
@@ -88,4 +93,4 @@ First public release.
   chain (esbuild via vite via vitest, dev server only — not in the
   shipped runtime). Tracked for v0.2 vite upgrade.
 
-[0.1.1]: https://github.com/numbererikson/shinobi/releases/tag/v0.1.1
+[0.1.2]: https://github.com/numbererikson/shinobi/releases/tag/v0.1.2
