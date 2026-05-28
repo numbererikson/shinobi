@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f1216"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7cb7ff"/>
+      <stop offset="100%" stop-color="#b48cff"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2a3142" stroke-width="1" opacity="0.4"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accentGrad)"/>
+
+  <g transform="translate(80, 110)">
+    <rect width="80" height="80" rx="16" fill="#161b22" stroke="#2a3142" stroke-width="2"/>
+    <text x="40" y="58" font-size="44" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif">🥷</text>
+  </g>
+
+  <text x="80" y="280" font-size="120" font-weight="700" fill="#d8dee9" font-family="system-ui, -apple-system, Segoe UI, sans-serif" letter-spacing="-3">shinobi</text>
+
+  <text x="80" y="360" font-size="44" font-weight="500" fill="#7cb7ff" font-family="system-ui, -apple-system, Segoe UI, sans-serif" letter-spacing="-0.5">Local-first task spine for AI coding agents</text>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" fill="#8892a8">
+    <text x="80" y="445">MCP server  ·  34 tools  ·  SQLite  ·  web dashboard  ·  plugin system</text>
+  </g>
+
+  <g transform="translate(80, 510)">
+    <rect width="220" height="50" rx="8" fill="#161b22" stroke="#2a3142" stroke-width="1.5"/>
+    <text x="20" y="33" font-size="20" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#7cb7ff">npm i -g shinobi</text>
+  </g>
+
+  <text x="1120" y="555" font-size="20" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#5b6478">github.com/numbererikson/shinobi</text>
+
+  <g opacity="0.4">
+    <circle cx="1050" cy="180" r="180" fill="none" stroke="url(#accentGrad)" stroke-width="2"/>
+    <circle cx="1050" cy="180" r="120" fill="none" stroke="#7cb7ff" stroke-width="1.5" opacity="0.6"/>
+    <circle cx="1050" cy="180" r="60" fill="none" stroke="#b48cff" stroke-width="1" opacity="0.5"/>
+  </g>
+</svg>
