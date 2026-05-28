@@ -131,6 +131,19 @@ const __filename = fileURLToPath(import.meta.url);
 const SPA_DIR = resolve(dirname(__filename), '..', '..', 'dist', 'dashboard-spa');
 const SPA_INDEX_PATH = resolve(SPA_DIR, 'index.html');
 
+let cachedVersion: string | null = null;
+function getPackageVersion(): string {
+  if (cachedVersion !== null) return cachedVersion;
+  try {
+    const pkgPath = resolve(dirname(__filename), '..', '..', 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { version?: string };
+    cachedVersion = pkg.version ?? 'unknown';
+  } catch {
+    cachedVersion = 'unknown';
+  }
+  return cachedVersion;
+}
+
 let cachedSpaIndex: string | null = null;
 function loadSpaIndex(): string | null {
   if (cachedSpaIndex !== null) return cachedSpaIndex;
@@ -304,7 +317,7 @@ function buildApp(auth?: AuthMiddlewareOptions): Hono {
   });
 
   // Health endpoint is intentionally unauthenticated for probes.
-  app.get('/health', (c) => c.json({ ok: true, version: '0.1.0' }));
+  app.get('/health', (c) => c.json({ ok: true, version: getPackageVersion() }));
 
   app.post('/api/projects', async (c) => {
     const body = (await c.req.json()) as { title?: string };
