@@ -15,9 +15,9 @@ import {
 } from './auth.js';
 import { listActivity } from '../models/activity.js';
 import { getContext } from '../models/context.js';
-import { listDeadEnds } from '../models/dead_ends.js';
-import { listDecisions, updateDecisionStatus, type DecisionStatus } from '../models/decisions.js';
-import { listNotes } from '../models/notes.js';
+import { checkDeadEnds, listDeadEnds } from '../models/dead_ends.js';
+import { listDecisions, searchDecisions, updateDecisionStatus, type DecisionStatus } from '../models/decisions.js';
+import { listNotes, searchNotes } from '../models/notes.js';
 import { getLatestPlan, listPlanVersions } from '../models/plans.js';
 import {
   archiveProject,
@@ -30,7 +30,7 @@ import {
   type Priority,
   type Status,
 } from '../models/projects.js';
-import { listSubtasks, getSubtask, setSubtaskAssignee, updateSubtask, type Subtask } from '../models/subtasks.js';
+import { listSubtasks, getSubtask, searchSubtasks, setSubtaskAssignee, updateSubtask, type Subtask } from '../models/subtasks.js';
 import { getSession, getProjectTimeStats, getTaskTimeStats, listSessions } from '../models/sessions.js';
 import { getProjectCostStats, getTaskCostStats } from '../models/session_costs.js';
 import { costIngest } from '../commands/cost.js';
@@ -237,6 +237,26 @@ function buildApp(auth?: AuthMiddlewareOptions): Hono {
     if (sort === 'active' || sort === 'priority' || sort === 'created') opts.sort = sort;
     if (workspace) opts.workspace = workspace;
     return c.json(listProjects(opts));
+  });
+
+  app.get('/api/recall', (c) => {
+    const query = (c.req.query('q') ?? '').trim();
+    const limit = Math.min(Number(c.req.query('limit') ?? 8), 20);
+    if (query.length < 2) {
+      return c.json({ query, projects: [], subtasks: [], decisions: [], dead_ends: [], notes: [] });
+    }
+    const needle = query.toLowerCase();
+    const projects = listProjects({ includeArchived: true })
+      .filter((p) => p.title.toLowerCase().includes(needle) || (p.description ?? '').toLowerCase().includes(needle))
+      .slice(0, limit);
+    return c.json({
+      query,
+      projects,
+      subtasks: searchSubtasks(query, undefined, limit),
+      decisions: searchDecisions(query, undefined, limit),
+      dead_ends: checkDeadEnds({ approach: query, limit }),
+      notes: searchNotes(query, undefined, limit),
+    });
   });
 
   app.get('/api/projects/:id/snapshot', (c) => {

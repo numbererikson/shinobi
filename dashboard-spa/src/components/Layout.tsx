@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
+import { CommandPalette } from './CommandPalette';
 import { listProjects } from '../lib/api';
 import type { Project } from '../lib/types';
 
@@ -9,9 +10,27 @@ export function Layout() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const isMod = e.metaKey || e.ctrlKey;
+      if (isMod && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    }
+    function onOpenEvent() { setPaletteOpen(true); }
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('cmd-palette:open', onOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('cmd-palette:open', onOpenEvent);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +101,8 @@ export function Layout() {
           <Outlet context={{ projects }} />
         </div>
       </main>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 }

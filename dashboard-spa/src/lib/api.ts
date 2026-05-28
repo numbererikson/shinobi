@@ -57,6 +57,20 @@ export function getProjectSnapshot(id: number): Promise<ProjectSnapshot> {
   return jsonFetch<ProjectSnapshot>(`/api/projects/${id}/snapshot`);
 }
 
+export interface RecallResult {
+  query: string;
+  projects: Project[];
+  subtasks: Subtask[];
+  decisions: Decision[];
+  dead_ends: DeadEnd[];
+  notes: Note[];
+}
+
+export function recall(query: string, limit = 8): Promise<RecallResult> {
+  const params = new URLSearchParams({ q: query, limit: String(limit) });
+  return jsonFetch<RecallResult>(`/api/recall?${params.toString()}`);
+}
+
 export function patchSubtask(id: number, patch: Partial<Pick<Subtask, 'status'>>): Promise<{ ok: boolean; subtask: Subtask | null }> {
   return jsonFetch(`/api/subtasks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
 }

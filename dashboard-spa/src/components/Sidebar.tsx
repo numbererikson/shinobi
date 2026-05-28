@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Activity, Archive, Bell, CheckSquare, Mic, Package, Radio, Settings as SettingsIcon } from 'lucide-react';
+import { Activity, Archive, Bell, CheckSquare, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
 import { WorkspaceBadge } from './WorkspaceBadge';
 import { SyncPanel } from './SyncPanel';
 import type { Project } from '../lib/types';
@@ -24,11 +25,26 @@ export function Sidebar({ projects }: SidebarProps) {
     byWorkspace.get(ws)!.push(p);
   }
 
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad/.test(navigator.platform ?? navigator.userAgent));
+  }, []);
+  const modKey = isMac ? '⌘' : 'Ctrl';
+
   return (
     <aside className="bg-panel-2 border-r border-border w-64 flex-shrink-0 overflow-y-auto scrollbar-thin p-4">
       <Link to="/" className="block text-lg font-bold tracking-wider mb-4 text-text">
         Shinobi 🥷
       </Link>
+
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent('cmd-palette:open'))}
+        className="w-full flex items-center gap-2 px-2 py-1.5 mb-4 rounded text-sm bg-panel border border-border text-text-muted hover:text-text hover:border-accent/60 transition-colors"
+      >
+        <Search className="w-3.5 h-3.5" />
+        <span className="flex-1 text-left">Search...</span>
+        <kbd className="text-[10px] border border-border rounded px-1 py-0.5">{modKey} K</kbd>
+      </button>
 
       <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">Workspace</div>
       <ul className="mb-4">
