@@ -236,8 +236,21 @@ Restart the MCP client and `mcp__shinobi__plugin_count_open` is available. See [
 
 ## Roadmap
 
-- v0.1 — local MCP + dashboard + plugin system + sync + optional embeddings (this release)
-- v0.2 — optional cloud SaaS variant, voice note transcription pipeline, mobile capture endpoint (if traction warrants)
+- **v0.1 (current)** — local MCP + dashboard + plugin system + git sync + relay
+  + optional embeddings + voice + mobile push + VS Code/Cursor extensions.
+- **v0.2** — multi-user team mode (auth + members + mentions UI), vite/dev-deps
+  upgrade, plugin marketplace UI polish, deeper integrations (Linear /
+  GitHub Issues sync candidates).
+- **v0.3** — hosted SaaS GA + Stripe billing.
+- **v1.0** — stability, audit, performance pass.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs welcome.
 
 ## License
 
