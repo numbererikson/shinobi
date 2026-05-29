@@ -5,6 +5,32 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-05-29
+
+Pre-launch polish: multi-client MCP bootstrap.
+
+### Added
+
+- **`shinobi init` now configures Cursor in addition to Claude Code.**
+  Writes `<workspace>/.cursor/mcp.json` alongside `<workspace>/.mcp.json`,
+  both using the absolute-path form (`command: <node>`, `args: [<cli.js>,
+  "mcp"]`) so they survive shell-less spawns on Windows.
+- **`shinobi init --print-config`** emits the MCP server JSON snippet to
+  stdout for clients that do not respect workspace MCP files (Cline,
+  Continue.dev, Zed). Pipe / paste into the relevant config.
+- **README "MCP client setup" section** with paste-ready file paths and
+  config snippets for all five clients (Claude Code, Cursor, Cline,
+  Continue.dev, Zed), plus the explicit warning that bare `shinobi`
+  command does not work in MCP configs because clients spawn with
+  `shell: false`.
+
+### Why
+
+The 0.1.2 init silently only helped Claude Code users. Cursor / Cline /
+Continue / Zed users would install Shinobi, run `shinobi init`, restart
+their client, see no `mcp__shinobi__*` tools, and conclude it was
+broken. Caught during pre-launch audit.
+
 ## [0.1.2] — 2026-05-28
 
 First publicly installable release.
