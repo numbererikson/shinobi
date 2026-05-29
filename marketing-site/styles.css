@@ -86,6 +86,16 @@ section h3 { font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--text); }
 }
 .lead-sm { color: var(--text-muted); margin-bottom: 1.5rem; }
 
+.hero-demo {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05);
+  background: #000;
+}
+
 .cta { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 2.5rem; flex-wrap: wrap; }
 
 .btn {
