@@ -79,7 +79,16 @@ shinobi dashboard
 2. Drop a `.mcp.json` snippet for the current project
 3. Print next steps
 
-Restart your MCP client (Claude Code / Cursor / Cline) and the `mcp__shinobi__*` tools become available.
+`shinobi init` writes config for the two clients with a workspace-local
+MCP convention out of the box:
+
+- **Claude Code** — `<workspace>/.mcp.json`
+- **Cursor** — `<workspace>/.cursor/mcp.json`
+
+Restart the client and the `mcp__shinobi__*` tools become available.
+
+For other MCP clients (Cline, Continue.dev, Zed), see the
+[MCP client setup](#mcp-client-setup) section below.
 
 Then open:
 
@@ -106,6 +115,94 @@ Important: the code lives in the Shinobi folder, but the local memory database l
 ```
 
 To move the tool only, copy/clone the Shinobi folder and run the install commands above. To move the existing projects, tasks, decisions, notes, and context too, either copy `~/.shinobi/` or use `shinobi sync`.
+
+## MCP client setup
+
+Every snippet below uses the **same JSON shape** — `command` is the path
+to the Node binary that's running Shinobi, `args` is `[<absolute path to
+dist/cli.js>, "mcp"]`. Print the exact values for your machine:
+
+```bash
+shinobi init --print-config
+```
+
+(Or read `.mcp.json` from any project where you already ran
+`shinobi init` — the values are identical.)
+
+### Claude Code
+
+Drops in automatically — `shinobi init` writes `<workspace>/.mcp.json`.
+Restart Claude Code to pick up the server.
+
+### Cursor
+
+Drops in automatically — `shinobi init` writes `<workspace>/.cursor/mcp.json`.
+Works on Cursor 0.43+. Restart Cursor or reload the workspace.
+
+For a **global** Cursor config (every project sees Shinobi), paste the
+same snippet into `~/.cursor/mcp.json` (or use Cursor Settings → MCP).
+
+### Cline (VS Code extension)
+
+Open Cline's settings file:
+
+- Windows: `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`
+- macOS: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+- Linux: `~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+
+Merge the contents of your project's `.mcp.json` into the file's
+`mcpServers` object. Restart VS Code.
+
+### Continue.dev
+
+Edit `~/.continue/config.json`. Add Shinobi to the `mcpServers` array
+(note: Continue uses an **array**, not an object like the others):
+
+```json
+{
+  "mcpServers": [
+    {
+      "name": "shinobi",
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/to/dist/cli.js", "mcp"]
+    }
+  ]
+}
+```
+
+Use the values from your project's `.mcp.json` for `command` and `args`.
+
+### Zed
+
+Edit `~/.config/zed/settings.json`. Zed nests MCP servers under
+`context_servers`:
+
+```json
+{
+  "context_servers": {
+    "shinobi": {
+      "command": {
+        "path": "/absolute/path/to/node",
+        "args": ["/absolute/path/to/dist/cli.js", "mcp"]
+      }
+    }
+  }
+}
+```
+
+Restart Zed.
+
+### Generic / other clients
+
+Any MCP client that supports the standard `{ command, args }` server spec
+should work. Use the same values your `.mcp.json` has:
+
+- `command`: absolute path to the Node binary running Shinobi
+- `args`: `[<absolute path to dist/cli.js>, "mcp"]`
+
+Avoid the bare `shinobi` command in MCP config — many clients spawn
+servers with `shell: false`, which skips the OS PATH resolution that
+makes `shinobi` work in a terminal.
 
 ## CLI
 

@@ -37,6 +37,10 @@ function mcpSnippet(): unknown {
   };
 }
 
+export function printMcpConfig(): void {
+  stdout.write(JSON.stringify(mcpSnippet(), null, 2) + '\n');
+}
+
 export interface InitOptions {
   force?: boolean;
   skipMcpJson?: boolean;
@@ -48,7 +52,18 @@ export interface InitResult {
   dbPath: string;
   envCreated: boolean;
   mcpJsonPath: string | null;
+  cursorMcpJsonPath: string | null;
   appliedMigrations: number;
+}
+
+function writeIfAbsent(target: string, contents: string, force: boolean): boolean {
+  if (existsSync(target) && !force) {
+    stdout.write(`note: ${target} already exists; pass --force to overwrite\n`);
+    return false;
+  }
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, contents, 'utf-8');
+  return true;
 }
 
 export function runInit(options: InitOptions = {}): InitResult {
@@ -67,13 +82,19 @@ export function runInit(options: InitOptions = {}): InitResult {
   const result = applyPendingMigrations();
 
   let mcpJsonPath: string | null = null;
+  let cursorMcpJsonPath: string | null = null;
   if (!options.skipMcpJson) {
-    const target = join(options.cwd ?? cwd(), '.mcp.json');
-    if (existsSync(target) && !options.force) {
-      stdout.write(`note: ${target} already exists; pass --force to overwrite\n`);
-    } else {
-      writeFileSync(target, JSON.stringify(mcpSnippet(), null, 2) + '\n', 'utf-8');
-      mcpJsonPath = target;
+    const snippet = JSON.stringify(mcpSnippet(), null, 2) + '\n';
+    const projectDir = options.cwd ?? cwd();
+
+    const claudeTarget = join(projectDir, '.mcp.json');
+    if (writeIfAbsent(claudeTarget, snippet, options.force ?? false)) {
+      mcpJsonPath = claudeTarget;
+    }
+
+    const cursorTarget = join(projectDir, '.cursor', 'mcp.json');
+    if (writeIfAbsent(cursorTarget, snippet, options.force ?? false)) {
+      cursorMcpJsonPath = cursorTarget;
     }
   }
 
@@ -82,6 +103,7 @@ export function runInit(options: InitOptions = {}): InitResult {
     dbPath: getDbPath(),
     envCreated,
     mcpJsonPath,
+    cursorMcpJsonPath,
     appliedMigrations: result.applied.length,
   };
 }
@@ -93,10 +115,14 @@ export function printInitSummary(result: InitResult): void {
   stdout.write(`  migrations:       applied ${result.appliedMigrations}\n`);
   stdout.write(`  .env template:    ${result.envCreated ? 'written' : 'preserved'}\n`);
   if (result.mcpJsonPath) {
-    stdout.write(`  .mcp.json:        wrote ${result.mcpJsonPath}\n`);
+    stdout.write(`  Claude Code:      wrote ${result.mcpJsonPath}\n`);
+  }
+  if (result.cursorMcpJsonPath) {
+    stdout.write(`  Cursor:           wrote ${result.cursorMcpJsonPath}\n`);
   }
   stdout.write(`\nNext steps:\n`);
-  stdout.write(`  1. Restart your MCP client (Claude Code / Cursor / Cline) to pick up the new server.\n`);
-  stdout.write(`  2. Optional: edit ${join(result.configDir, '.env')} to override defaults.\n`);
-  stdout.write(`  3. Optional: configure cross-machine sync with: shinobi sync init <repo-path> [branch]\n`);
+  stdout.write(`  1. Restart Claude Code or Cursor — they pick up the new server automatically.\n`);
+  stdout.write(`  2. Using Cline, Continue.dev, or Zed? See README "MCP client setup" for paste-ready snippets.\n`);
+  stdout.write(`  3. Optional: edit ${join(result.configDir, '.env')} to override defaults.\n`);
+  stdout.write(`  4. Optional: configure cross-machine sync with: shinobi sync init <repo-path> [branch]\n`);
 }

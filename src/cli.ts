@@ -19,7 +19,7 @@ try {
   // .env missing or unreadable on a fresh install — nothing to hydrate.
 }
 
-import { printInitSummary, runInit } from './commands/init.js';
+import { printInitSummary, printMcpConfig, runInit } from './commands/init.js';
 import { costIngest } from './commands/cost.js';
 import { runDigest } from './commands/digest.js';
 import { syncInit, syncPull, syncPush, syncStatus } from './commands/sync.js';
@@ -47,7 +47,8 @@ Usage:
   shinobi <command> [options]
 
 Commands:
-  init                            Bootstrap ~/.shinobi/ and drop .mcp.json in the current directory
+  init                            Bootstrap ~/.shinobi/ and write MCP config (.mcp.json + .cursor/mcp.json)
+  init --print-config             Print the MCP server JSON snippet to stdout (for Cline / Continue / Zed)
   mcp                             Run the MCP server over stdio (invoked by the MCP client)
   migrate                         Apply pending SQL migrations
   sync init <path> [branch]       Configure a local git repo as the cross-machine sync target
@@ -82,6 +83,10 @@ async function runMigrate(): Promise<void> {
 }
 
 async function dispatchInit(rest: string[]): Promise<void> {
+  if (rest.includes('--print-config')) {
+    printMcpConfig();
+    return;
+  }
   const force = rest.includes('--force');
   const result = runInit({ force });
   printInitSummary(result);
