@@ -11,7 +11,7 @@ If you've found a security issue in Shinobi, **please do not open a public
 GitHub issue**. Instead, email:
 
 ```
-contact@shinobi-apps.hr
+contact@shinobi-apps.com
 ```
 
 Include:

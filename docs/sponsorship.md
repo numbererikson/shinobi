@@ -45,7 +45,7 @@ Different value props, no overlap.
 
 ## How to apply for the free OSS-project tier
 
-Email contact@shinobi-apps.hr with:
+Email contact@shinobi-apps.com with:
 - The repo URL
 - Brief description of the project
 - How you'd use Shinobi in your workflow

@@ -46,7 +46,7 @@ build-in-public.
 **CTA:**
 > 5/ MIT-licensed. Install with one npm command. Self-host forever.
 >
-> https://shinobi.numbererikson.workers.dev
+> https://shinobi-apps.com/shinobi
 
 ---
 
@@ -139,7 +139,7 @@ in your own setup. Post when you have a concrete story to tell.
 **CTA:**
 > 5/ HN thread: <fill in on launch day>
 > Repo: https://github.com/numbererikson/shinobi
-> Web: https://shinobi.numbererikson.workers.dev
+> Web: https://shinobi-apps.com/shinobi
 
 ---
 

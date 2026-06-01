@@ -24,7 +24,7 @@ predictable; the prep makes or breaks it.
 
 - [ ] Record the three screencasts (see launch-screencasts.md), upload
       to Loom + YouTube, embed in marketing site
-- [ ] Marketing site live at https://shinobi.numbererikson.workers.dev
+- [ ] Marketing site live at https://shinobi-apps.com/shinobi
       with TLS, analytics, OG image
 - [ ] First two blog posts (01 + 02) published on Hashnode (canonical)
       + cross-posted to dev.to

@@ -106,7 +106,7 @@ It's allowed. Note it publicly:
 README.md update:
 > Note: I'm taking a 2-week break from active maintenance starting
 > 2026-08-15. Issues will be triaged on return; security reports still
-> get same-day responses (email contact@shinobi-apps.hr).
+> get same-day responses (email contact@shinobi-apps.com).
 ```
 
 The community handles 2-week absences gracefully if you set the

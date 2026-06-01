@@ -46,7 +46,7 @@ Instances of unacceptable behavior may be reported to the project
 maintainer at:
 
 ```
-contact@shinobi-apps.hr
+contact@shinobi-apps.com
 ```
 
 All complaints will be reviewed and investigated promptly and fairly. The

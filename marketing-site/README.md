@@ -1,7 +1,7 @@
 # Shinobi marketing site
 
 Static HTML/CSS, zero build step. Currently deployed to Cloudflare
-Workers (static asset) at https://shinobi.numbererikson.workers.dev.
+Workers (static asset) at https://shinobi-apps.com/shinobi.
 
 ## Local preview
 
@@ -27,7 +27,7 @@ To re-deploy after edits:
 
 ## Edit checklist before going live
 
-- [x] Email mailto links → `contact@shinobi-apps.hr`
+- [x] Email mailto links → `contact@shinobi-apps.com`
 - [x] Cloudflare Web Analytics beacon wired
 - [x] CTA "Get early access" → "Join waitlist" (honest signaling)
 - [ ] Wire Team/Pro buttons to a real waitlist form (Tally / Formspree)
@@ -35,7 +35,7 @@ To re-deploy after edits:
 - [ ] Open Graph image: drop a `og-image.png` at the root + add
       `<meta property="og:image" content="...">` once designed
 - [ ] PNG favicon variants (currently SVG only) for older browsers
-- [ ] Future: custom domain `mcp.shinobi-apps.hr` (Faza 9 post-launch
+- [ ] Future: custom domain `shinobi-apps.com/shinobi` (Faza 9 post-launch
       after DNS migration to Cloudflare)
 
 ## What this site IS
