@@ -21,7 +21,25 @@ export interface Project {
   recent_summary_md: string | null;
   recent_summary_at: string | null;
   recent_summary_provider: string | null;
+  subtasks_total: number;
+  subtasks_done: number;
 }
+
+const SUBTASK_AGGREGATE_SQL = `
+  LEFT JOIN (
+    SELECT
+      project_id,
+      COUNT(*) AS subtasks_total,
+      SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS subtasks_done
+    FROM subtasks
+    GROUP BY project_id
+  ) AS subtask_counts ON subtask_counts.project_id = projects.id
+`;
+
+const SUBTASK_AGGREGATE_COLS = `
+  COALESCE(subtask_counts.subtasks_total, 0) AS subtasks_total,
+  COALESCE(subtask_counts.subtasks_done, 0) AS subtasks_done
+`;
 
 export type ProjectSort = 'priority' | 'active' | 'created';
 
@@ -51,9 +69,12 @@ export function listProjects(options: ListProjectsOptions = {}): Project[] {
     // Order by most-recent activity row per project; fall back to project creation timestamp
     // for projects that have no activity yet so they aren't pushed to the bottom forever.
     const sql = `
-      SELECT projects.*, COALESCE(MAX(activity.created_at), projects.created_at) AS last_active
+      SELECT projects.*,
+        ${SUBTASK_AGGREGATE_COLS},
+        COALESCE(MAX(activity.created_at), projects.created_at) AS last_active
       FROM projects
       LEFT JOIN activity ON activity.project_id = projects.id
+      ${SUBTASK_AGGREGATE_SQL}
       ${whereSql}
       GROUP BY projects.id
       ORDER BY last_active DESC
@@ -63,25 +84,33 @@ export function listProjects(options: ListProjectsOptions = {}): Project[] {
 
   if (sort === 'created') {
     const sql = `
-      SELECT * FROM projects
+      SELECT projects.*, ${SUBTASK_AGGREGATE_COLS}
+      FROM projects
+      ${SUBTASK_AGGREGATE_SQL}
       ${whereSql}
-      ORDER BY created_at DESC
+      ORDER BY projects.created_at DESC
     `;
     return getDb().prepare<unknown[], Project>(sql).all(...params);
   }
 
   const sql = `
-    SELECT * FROM projects
+    SELECT projects.*, ${SUBTASK_AGGREGATE_COLS}
+    FROM projects
+    ${SUBTASK_AGGREGATE_SQL}
     ${whereSql}
-    ORDER BY ${PRIORITY_ORDER_SQL} DESC, created_at DESC
+    ORDER BY ${PRIORITY_ORDER_SQL} DESC, projects.created_at DESC
   `;
   return getDb().prepare<unknown[], Project>(sql).all(...params);
 }
 
 export function getProject(id: number): Project | null {
-  const row = getDb()
-    .prepare<[number], Project>('SELECT * FROM projects WHERE id = ?')
-    .get(id);
+  const sql = `
+    SELECT projects.*, ${SUBTASK_AGGREGATE_COLS}
+    FROM projects
+    ${SUBTASK_AGGREGATE_SQL}
+    WHERE projects.id = ?
+  `;
+  const row = getDb().prepare<[number], Project>(sql).get(id);
   return row ?? null;
 }
 
@@ -178,11 +207,13 @@ export function projectsMatchingTargetPath(filePath: string): Project[] {
   const normalizedFile = normalizePathForMatch(filePath);
   return getDb()
     .prepare<[], Project>(
-      `SELECT * FROM projects
-       WHERE target_path IS NOT NULL
-         AND target_path != ''
-         AND archived_at IS NULL
-       ORDER BY LENGTH(target_path) DESC`,
+      `SELECT projects.*, ${SUBTASK_AGGREGATE_COLS}
+       FROM projects
+       ${SUBTASK_AGGREGATE_SQL}
+       WHERE projects.target_path IS NOT NULL
+         AND projects.target_path != ''
+         AND projects.archived_at IS NULL
+       ORDER BY LENGTH(projects.target_path) DESC`,
     )
     .all()
     .filter((project) => {

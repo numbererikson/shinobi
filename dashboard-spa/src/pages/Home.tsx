@@ -14,6 +14,33 @@ interface OutletCtx {
   projects: Project[];
 }
 
+function ProgressCell({ done, total }: { done: number; total: number }) {
+  if (total === 0) {
+    return <span className="text-text-muted text-xs">—</span>;
+  }
+  const pct = Math.round((done / total) * 100);
+  const isDone = done === total;
+  const barColor = isDone ? 'bg-emerald-500' : pct >= 50 ? 'bg-accent' : 'bg-amber-500';
+  return (
+    <div className="flex items-center gap-2 min-w-[140px]">
+      <div className="flex-1 h-1.5 bg-border/40 rounded overflow-hidden">
+        <div
+          className={`h-full ${barColor} transition-all`}
+          style={{ width: `${pct}%` }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${done} of ${total} subtasks done`}
+        />
+      </div>
+      <span className="text-text-muted text-xs tabular-nums whitespace-nowrap">
+        {done}/{total} · {pct}%
+      </span>
+    </div>
+  );
+}
+
 function ProjectsTable({ rows, dim = false }: { rows: Project[]; dim?: boolean }) {
   return (
     <div className="overflow-x-auto">
@@ -24,6 +51,7 @@ function ProjectsTable({ rows, dim = false }: { rows: Project[]; dim?: boolean }
             <th className="font-medium pb-2 pr-3">Title</th>
             <th className="font-medium pb-2 pr-3">Status</th>
             <th className="font-medium pb-2 pr-3">Priority</th>
+            <th className="font-medium pb-2 pr-3">Progress</th>
             <th className="font-medium pb-2 pr-3">Type</th>
             <th className="font-medium pb-2 pr-3">Target path</th>
             <th className="font-medium pb-2 pr-3">Due</th>
@@ -41,6 +69,9 @@ function ProjectsTable({ rows, dim = false }: { rows: Project[]; dim?: boolean }
               </td>
               <td className="py-2 pr-3"><StatusBadge status={p.status} /></td>
               <td className="py-2 pr-3"><PriorityBadge priority={p.priority} /></td>
+              <td className="py-2 pr-3">
+                <ProgressCell done={p.subtasks_done} total={p.subtasks_total} />
+              </td>
               <td className="py-2 pr-3 text-text-muted">{p.project_type ?? ''}</td>
               <td className="py-2 pr-3 text-text-muted font-mono text-xs">{p.target_path ?? ''}</td>
               <td className="py-2 pr-3 text-text-muted">{p.due_date ?? ''}</td>

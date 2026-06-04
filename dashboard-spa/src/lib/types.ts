@@ -20,6 +20,8 @@ export interface Project {
   recent_summary_md: string | null;
   recent_summary_at: string | null;
   recent_summary_provider: string | null;
+  subtasks_total: number;
+  subtasks_done: number;
 }
 
 export interface Subtask {
