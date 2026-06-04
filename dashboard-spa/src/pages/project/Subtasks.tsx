@@ -4,7 +4,7 @@ import { timeSince } from '../../lib/format';
 import type { ProjectOutletCtx } from '../ProjectLayout';
 
 export function Subtasks() {
-  const { snapshot } = useOutletContext<ProjectOutletCtx>();
+  const { snapshot, openSubtask } = useOutletContext<ProjectOutletCtx>();
   const { subtasks } = snapshot;
 
   if (subtasks.length === 0) {
@@ -31,7 +31,11 @@ export function Subtasks() {
         </thead>
         <tbody>
           {subtasks.map((s) => (
-            <tr key={s.id} className="border-b border-border/40 hover:bg-panel/40 align-top">
+            <tr
+              key={s.id}
+              className="border-b border-border/40 hover:bg-panel/40 align-top cursor-pointer"
+              onClick={() => openSubtask(s.id)}
+            >
               <td className="py-2 pr-3 text-text-muted font-mono">{s.id}</td>
               <td className="py-2 pr-3">
                 <div className="text-text font-medium">{s.title}</div>

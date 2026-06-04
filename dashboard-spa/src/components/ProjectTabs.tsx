@@ -17,8 +17,8 @@ interface ProjectTabsProps {
 export function ProjectTabs({ projectId, draftPendingCount }: ProjectTabsProps) {
   const base = `/projects/${projectId}`;
   const tabs: TabSpec[] = [
-    { to: base, label: 'Kanban', end: true },
-    { to: `${base}/subtasks`, label: 'Subtasks' },
+    { to: base, label: 'Board', end: true },
+    { to: `${base}/subtasks`, label: 'List' },
     { to: `${base}/decisions`, label: 'Decisions' },
     {
       to: `${base}/decision-drafts`,

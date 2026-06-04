@@ -13,7 +13,7 @@ const COLS: Array<{ key: Status; label: string }> = [
 ];
 
 export function Kanban() {
-  const { snapshot, refresh } = useOutletContext<ProjectOutletCtx>();
+  const { snapshot, refresh, openSubtask } = useOutletContext<ProjectOutletCtx>();
   const { project, subtasks } = snapshot;
 
   const byCol: Record<Status, Subtask[]> = { todo: [], in_progress: [], done: [] };
@@ -63,7 +63,12 @@ export function Kanban() {
                 <div className="text-text-dim text-xs">(empty)</div>
               ) : (
                 byCol[col.key].map((s) => (
-                  <div key={s.id} className="bg-panel-2 border border-border rounded p-2.5 text-xs">
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => openSubtask(s.id)}
+                    className="w-full text-left bg-panel-2 border border-border rounded p-2.5 text-xs hover:border-accent/60 hover:bg-panel transition-colors cursor-pointer"
+                  >
                     <div className="text-text font-medium mb-1">{s.title}</div>
                     <div className="text-text-muted flex flex-wrap gap-2 items-center text-[11px]">
                       <PriorityBadge priority={s.priority} />
@@ -73,7 +78,10 @@ export function Kanban() {
                       )}
                       {s.claude_session_id && <span title={s.claude_session_id}>session</span>}
                     </div>
-                    <div className="flex gap-1.5 mt-2">
+                    <div
+                      className="flex gap-1.5 mt-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {s.status !== 'todo' && (
                         <Button size="sm" variant="ghost" onClick={() => void transition(s.id, 'todo')} className="flex items-center gap-1">
                           <Undo2 className="w-3 h-3" /> todo
@@ -90,7 +98,7 @@ export function Kanban() {
                         </Button>
                       )}
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>

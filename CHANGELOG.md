@@ -5,6 +5,27 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] — 2026-06-04
+
+Dashboard UX: kanban/list naming + clickable subtask cards.
+
+### Changed
+
+- **Renamed project tabs to match standard board/list nomenclature.**
+  "Kanban" → "Board", "Subtasks" → "List". The two tabs were already
+  showing the same project subtasks in different layouts (board grouped
+  by status vs. flat sortable table); the old labels falsely implied a
+  parent-child hierarchy ("Subtasks of what?"). URLs are unchanged so
+  bookmarks and external links keep working.
+
+### Added
+
+- **Subtask detail drawer.** Clicking a card on the board or a row in
+  the list opens a slide-in drawer on the right with the full title,
+  description, status transitions, dependencies, files touched, and
+  timestamps. ESC and backdrop click close. Inline status buttons on
+  board cards still work (clicks inside them no longer open the drawer).
+
 ## [0.1.5] — 2026-06-04
 
 Bugfix release: the `prepare` lifecycle script no longer recurses on Windows.

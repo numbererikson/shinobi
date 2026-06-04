@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { ProjectTabs } from '../components/ProjectTabs';
+import { SubtaskDrawer } from '../components/SubtaskDrawer';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { WorkspaceBadge } from '../components/WorkspaceBadge';
 import { getProjectSnapshot, type ProjectSnapshot } from '../lib/api';
@@ -9,6 +10,7 @@ import { timeSince } from '../lib/format';
 export interface ProjectOutletCtx {
   snapshot: ProjectSnapshot;
   refresh: () => Promise<void>;
+  openSubtask: (id: number) => void;
 }
 
 export function ProjectLayout() {
@@ -16,6 +18,7 @@ export function ProjectLayout() {
   const id = Number(params.id);
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [selectedSubtaskId, setSelectedSubtaskId] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -30,8 +33,14 @@ export function ProjectLayout() {
     if (!Number.isFinite(id)) return;
     setSnapshot(null);
     setErr(null);
+    setSelectedSubtaskId(null);
     void refresh();
   }, [id, refresh]);
+
+  const selectedSubtask = useMemo(
+    () => snapshot?.subtasks.find((s) => s.id === selectedSubtaskId) ?? null,
+    [snapshot, selectedSubtaskId],
+  );
 
   if (err) return <div className="text-danger">Error: {err}</div>;
   if (!snapshot) return <div className="text-text-muted">loading...</div>;
@@ -71,7 +80,21 @@ export function ProjectLayout() {
 
       <ProjectTabs projectId={id} draftPendingCount={snapshot.draft_counts.pending} />
 
-      <Outlet context={{ snapshot, refresh } satisfies ProjectOutletCtx} />
+      <Outlet
+        context={
+          {
+            snapshot,
+            refresh,
+            openSubtask: (sid: number) => setSelectedSubtaskId(sid),
+          } satisfies ProjectOutletCtx
+        }
+      />
+
+      <SubtaskDrawer
+        subtask={selectedSubtask}
+        onClose={() => setSelectedSubtaskId(null)}
+        onChanged={refresh}
+      />
     </div>
   );
 }
