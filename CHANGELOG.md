@@ -5,6 +5,32 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] — 2026-06-04
+
+Dashboard quality-of-life: project list now shows subtask completion at a glance.
+
+### Added
+
+- **Project progress bar in the dashboard table.** New "Progress" column
+  renders a slim bar plus `done/total · %` text next to every project.
+  Color tier: emerald when 100% done, accent when ≥ 50%, amber under 50%,
+  em dash when the project has no subtasks. `role="progressbar"` with
+  `aria-valuenow` for screen readers.
+- **Backend exposes `subtasks_total` + `subtasks_done` on every project
+  read path.** `listProjects`, `getProject`, and `projectsMatchingTargetPath`
+  now LEFT JOIN a subtask aggregate subquery and surface both counts on
+  the `Project` type. The `/api/projects` endpoint returns them without
+  any extra round-trips.
+
+### Why
+
+The project list used to show only `project.status` (`todo` / `in_progress`
+/ `done`), which is operator-set and frequently lags behind the real subtask
+state — projects sat at "todo" while every subtask was already done. Users
+had to drill into each project just to see whether work was actually
+finished. The progress column closes that loop without changing the
+operator-controlled status semantics.
+
 ## [0.1.3] — 2026-05-29
 
 Pre-launch polish: multi-client MCP bootstrap.
