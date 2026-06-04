@@ -5,6 +5,25 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-06-04
+
+Bugfix release: the `prepare` lifecycle script no longer recurses on Windows.
+
+### Fixed
+
+- **`prepare` script no longer loops on Windows when nested `npm`
+  invocations can't find `node` on `cmd.exe`'s PATH.** The previous
+  inline form was `node -e "...exists..." || (npm install --prefix
+  dashboard-spa && npm run build)`; on Windows, each nested `npm` call
+  spawned its own `cmd.exe`, and somewhere ~25 levels deep `node` fell
+  off PATH and the whole tree retried in a loop. Replaced with
+  `node scripts/prepare.mjs`, which does the dist-exists check directly
+  via `fs.existsSync` and short-circuits via `SHINOBI_PREPARE_RUNNING`
+  to break any future recursion. Only ever bit contributors cloning the
+  repo on Windows when node wasn't on the system `cmd.exe` PATH — npm
+  registry users were never affected (registry installs ship a prebuilt
+  `dist/` and don't run `prepare`).
+
 ## [0.1.4] — 2026-06-04
 
 Dashboard quality-of-life: project list now shows subtask completion at a glance.
