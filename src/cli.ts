@@ -27,7 +27,7 @@ import { startDashboard } from './dashboard/server.js';
 import { applyPendingMigrations } from './lib/migrations.js';
 import { startMcpServer } from './server/mcp.js';
 
-const COMMANDS = ['init', 'mcp', 'dashboard', 'migrate', 'sync', 'cost', 'digest'] as const;
+const COMMANDS = ['init', 'mcp', 'dashboard', 'serve', 'migrate', 'sync', 'cost', 'digest'] as const;
 type Command = (typeof COMMANDS)[number];
 
 function readVersion(): string {
@@ -56,6 +56,8 @@ Commands:
   sync pull                       Restore the DB from the sync repo's snapshot
   sync status                     Show last push/pull timestamps and git status
   dashboard                       Start the web dashboard on localhost (default port 8765)
+  serve [--host H] [--port P]     Start the dashboard + MCP streamable HTTP endpoint (/mcp) in one process
+                                  Non-loopback hosts get token auth automatically (see docs/remote-mcp.md)
   cost ingest [--since H]         Parse Claude Code transcripts under ~/.claude/projects/ and upsert per-session AI token cost (USD)
   cost ingest --source <dir>      Override transcript root (e.g. another machine's mirrored directory)
   digest [--workspace W] [--telegram]   Render weekly Markdown summary → ~/.shinobi/digests/YYYY-WW.md
@@ -141,6 +143,22 @@ async function dispatchDigest(rest: string[]): Promise<void> {
   await runDigest(options);
 }
 
+async function dispatchServe(rest: string[]): Promise<void> {
+  const options: Parameters<typeof startDashboard>[0] = { mcp: true };
+  for (let i = 0; i < rest.length; i++) {
+    const v = rest[i];
+    if (v === '--host' && rest[i + 1]) options.host = rest[++i];
+    else if (v === '--port' && rest[i + 1]) options.port = Number(rest[++i]);
+    else {
+      stderr.write(`serve: unknown option "${v}"\n`);
+      exit(1);
+      return;
+    }
+  }
+  applyPendingMigrations();
+  await startDashboard(options);
+}
+
 async function dispatchSync(rest: string[]): Promise<void> {
   const sub = rest[0];
   if (!sub) {
@@ -211,6 +229,9 @@ async function main(): Promise<void> {
     case 'dashboard':
       applyPendingMigrations();
       await startDashboard();
+      return;
+    case 'serve':
+      await dispatchServe(rest);
       return;
     case 'cost':
       await dispatchCost(rest);

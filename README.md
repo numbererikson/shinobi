@@ -205,6 +205,22 @@ Avoid the bare `shinobi` command in MCP config — many clients spawn
 servers with `shell: false`, which skips the OS PATH resolution that
 makes `shinobi` work in a terminal.
 
+### Remote (self-hosted) mode
+
+Host one Shinobi brain on a server and connect every device to it — your
+desktop editor, Claude Code web/mobile sessions, any remote-MCP-capable
+client. `shinobi serve` exposes the MCP endpoint at `/mcp` (streamable HTTP,
+bearer-token auth) alongside the dashboard:
+
+```bash
+claude mcp add --transport http shinobi https://your-host/mcp \
+  --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+Local-first stays the default; remote mode is the same binary with a
+different transport. Full deployment guide (Docker, VPS, HTTPS, client
+config): [docs/remote-mcp.md](docs/remote-mcp.md).
+
 ## CLI
 
 ```
@@ -215,6 +231,7 @@ Commands:
   mcp                             Run the MCP server over stdio (invoked by the MCP client)
   migrate                         Apply pending SQL migrations
   dashboard                       Start the web dashboard on localhost (default port 8765)
+  serve [--host H] [--port P]     Dashboard + MCP HTTP endpoint (/mcp) in one process — see docs/remote-mcp.md
   sync init <path> [branch]       Configure a local git repo as the cross-machine sync target
   sync push                       Snapshot the DB and commit it to the sync repo
   sync pull                       Restore the DB from the sync repo's snapshot

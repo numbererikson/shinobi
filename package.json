@@ -21,6 +21,7 @@
     "docs/plugins.md",
     "docs/relay.md",
     "docs/remote-access.md",
+    "docs/remote-mcp.md",
     "docs/sponsorship.md",
     "README.md",
     "LICENSE",
@@ -42,7 +43,8 @@
     "smoke:tools": "node --import tsx scripts/smoke-tools-direct.ts",
     "smoke:mcp": "node --import tsx scripts/smoke-mcp-stdio.ts",
     "smoke:dashboard": "node --import tsx scripts/smoke-dashboard.ts",
-    "test": "npm run build && npm run smoke:tools && npm run smoke:mcp && npm run smoke:dashboard",
+    "smoke:mcp-http": "node --import tsx scripts/smoke-mcp-http.ts",
+    "test": "npm run build && npm run smoke:tools && npm run smoke:mcp && npm run smoke:mcp-http && npm run smoke:dashboard",
     "test:vitest": "vitest run",
     "test:watch": "vitest"
   },

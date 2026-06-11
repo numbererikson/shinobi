@@ -21,11 +21,24 @@ export interface ServerInfo {
 
 const DEFAULT_INFO: ServerInfo = { name: 'shinobi', version: '0.0.1' };
 
-export async function startMcpServer(info: ServerInfo = DEFAULT_INFO): Promise<void> {
+/**
+ * One-time runtime bootstrap shared by every transport (stdio + HTTP):
+ * migrations, built-in tool registration, plugin discovery. Safe to call
+ * more than once — registerBuiltins guards itself and migrations are
+ * checksum-gated.
+ */
+export async function initToolRuntime(): Promise<void> {
   applyPendingMigrations();
   registerBuiltins();
   await loadDiscoveredPlugins();
+}
 
+/**
+ * Builds a configured MCP Server wired to the shared tool registry.
+ * Transport-agnostic: callers connect it to stdio (startMcpServer) or to a
+ * per-request streamable HTTP transport (server/http.ts).
+ */
+export function buildMcpServer(info: ServerInfo = DEFAULT_INFO): Server {
   const server = new Server(info, { capabilities: { tools: {} } });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -66,6 +79,12 @@ export async function startMcpServer(info: ServerInfo = DEFAULT_INFO): Promise<v
     }
   });
 
+  return server;
+}
+
+export async function startMcpServer(info: ServerInfo = DEFAULT_INFO): Promise<void> {
+  await initToolRuntime();
+  const server = buildMcpServer(info);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   stderr.write(`shinobi mcp: server ready (${allTools().length} tools)\n`);
