@@ -28,5 +28,8 @@ jobs:
       - name: Smoke — MCP stdio transport
         run: npm run smoke:mcp
 
+      - name: Smoke — MCP streamable HTTP transport
+        run: npm run smoke:mcp-http
+
       - name: Smoke — dashboard HTTP endpoints
         run: npm run smoke:dashboard

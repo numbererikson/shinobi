@@ -108,6 +108,8 @@ import {
 } from '../models/approvals.js';
 import { ensureVapidConfigured, sendPushToAll } from '../services/push/web-push.js';
 import { broadcastSyncAvailable, getRelayClient } from '../services/relay/client.js';
+import { registerMcpRoutes } from '../server/http.js';
+import { initToolRuntime } from '../server/mcp.js';
 
 export interface StartDashboardOptions {
   port?: number;
@@ -117,6 +119,13 @@ export interface StartDashboardOptions {
    * and disabled for 127.0.0.1 / localhost / ::1.
    */
   auth?: AuthMiddlewareOptions;
+  /**
+   * Expose the MCP streamable HTTP endpoint at /mcp alongside the dashboard.
+   * Defaults to SHINOBI_MCP_HTTP=on|true|1 (off otherwise). The endpoint
+   * shares the dashboard auth middleware — remote binds get token auth
+   * automatically.
+   */
+  mcp?: boolean;
 }
 
 const STATUS_VALUES = ['todo', 'in_progress', 'done'] as const;
@@ -152,11 +161,15 @@ function loadSpaIndex(): string | null {
   return cachedSpaIndex;
 }
 
-function buildApp(auth?: AuthMiddlewareOptions): Hono {
+function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono {
   const app = new Hono();
 
   if (auth?.enabled) {
     app.use('*', createAuthMiddleware(auth));
+  }
+
+  if (opts?.mcp) {
+    registerMcpRoutes(app);
   }
 
   // Track dashboard hits (opt-in, no-op when SHINOBI_TELEMETRY=off).
@@ -1126,9 +1139,22 @@ export async function startDashboard(options: StartDashboardOptions = {}): Promi
     auth = { enabled: true, token: resolved.token, tokenPath: resolved.path };
   }
 
-  const app = buildApp(auth);
+  const mcpEnv = (process.env['SHINOBI_MCP_HTTP'] ?? '').toLowerCase();
+  const mcp = options.mcp ?? (mcpEnv === 'on' || mcpEnv === 'true' || mcpEnv === '1');
+  if (mcp) {
+    // Tools need migrations + registry + plugins before the first /mcp call.
+    await initToolRuntime();
+  }
+
+  const app = buildApp(auth, { mcp });
   const server = serve({ fetch: app.fetch, port, hostname: host });
   stdout.write(`shinobi dashboard: listening on http://${host}:${port}\n`);
+  if (mcp) {
+    stdout.write(`shinobi mcp: streamable HTTP endpoint at http://${host}:${port}/mcp\n`);
+    if (!auth.enabled) {
+      stdout.write(`shinobi mcp: auth OFF — do not expose this bind beyond localhost\n`);
+    }
+  }
   if (auth.enabled && auth.token) {
     const reason = isLoopbackHost(host) ? 'forced via env' : 'non-loopback bind';
     stdout.write(`shinobi dashboard: auth ON (${reason})\n`);
