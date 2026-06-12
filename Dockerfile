@@ -27,6 +27,7 @@ RUN npx tsc && npm run build:spa \
 FROM node:22-slim
 ENV NODE_ENV=production \
     SHINOBI_CONFIG_DIR=/data \
+    SHINOBI_DB_PATH=/data/shinobi.db \
     SHINOBI_DASHBOARD_PORT=8765
 WORKDIR /app
 

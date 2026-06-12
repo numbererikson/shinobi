@@ -34,6 +34,9 @@ Auth reuses the dashboard token middleware:
 > can read and write your entire project memory. Always front the endpoint
 > with HTTPS (reverse proxy or your platform's TLS).
 
+> 💸 Want this for $0/month? Follow the step-by-step
+> [GCP free tier + Cloudflare Tunnel walkthrough](deploy-gcp-free.md).
+
 ## Quickstart: Docker on a VPS
 
 ```bash
@@ -112,6 +115,7 @@ ends as you go; call `session_closeout` before finishing.
 | `SHINOBI_DASHBOARD_TOKEN` | generated | Bearer token for dashboard + `/mcp` |
 | `SHINOBI_DASHBOARD_AUTH` | auto | `on`/`off` override; auto = on for non-loopback binds |
 | `SHINOBI_CONFIG_DIR` | `~/.shinobi` | Database + config location (Docker image sets `/data`) |
+| `SHINOBI_DB_PATH` | `<config-dir>/shinobi.db` | Explicit database file override |
 
 ## FAQ
 
