@@ -29,6 +29,11 @@ ENV NODE_ENV=production \
     SHINOBI_CONFIG_DIR=/data \
     SHINOBI_DB_PATH=/data/shinobi.db \
     SHINOBI_DASHBOARD_PORT=8765
+# git powers `shinobi sync` (DB snapshot push/pull to a private repo) —
+# without it the sync feature is dead inside the container.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY --from=build /app/node_modules node_modules

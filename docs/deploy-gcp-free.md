@@ -148,6 +148,20 @@ claude mcp add --transport http shinobi https://shinobi.yourdomain.com/mcp \
   `docker run` command from step 3 (same token). The database lives on the
   volume and survives.
 - **Backups**: the volume survives container replacement but not project
-  deletion — set up `shinobi sync` against a private git repo, or
-  periodically copy `/data/shinobi.db` out
-  (`docker cp shinobi:/data/shinobi.db ./backup-$(date +%F).db`).
+  deletion. Wire `shinobi sync` to a private git repo (git is included in
+  the image):
+
+  ```bash
+  # one-time: fine-grained GitHub PAT with Contents read/write on the sync repo
+  docker exec shinobi git clone https://YOUR_PAT@github.com/you/your-sync-repo.git /data/sync
+  docker exec shinobi git -C /data/sync config user.name "shinobi-server"
+  docker exec shinobi git -C /data/sync config user.email "shinobi@localhost"
+  docker exec shinobi node /app/dist/cli.js sync init /data/sync
+  docker exec shinobi node /app/dist/cli.js sync push   # test it
+
+  # nightly cron on the VM host:
+  ( crontab -l 2>/dev/null; echo '0 3 * * * docker exec shinobi node /app/dist/cli.js sync push' ) | crontab -
+  ```
+
+  The clone lives on the `/data` volume, so credentials and git config
+  survive container upgrades.
