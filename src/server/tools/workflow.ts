@@ -142,7 +142,7 @@ export const workflowTools: ShinobiTool[] = [
           : null,
         summary_stale: summaryStale,
         summary_stale_hint: summaryStale
-          ? 'recent_summary is missing or older than the latest project activity. session_closeout refreshes it automatically when an LLM provider is configured (SHINOBI_LLM_PROVIDER); rely on recent_activity and open_decisions until then.'
+          ? 'recent_summary is missing or older than the latest project activity. session_closeout refreshes it on every closeout (LLM-compressed when SHINOBI_LLM_PROVIDER is configured, otherwise from the agent-authored summary); rely on recent_activity and open_decisions until then.'
           : null,
         context: getContext(projectId),
         latest_plan: getLatestPlan(projectId),
@@ -352,6 +352,7 @@ export const workflowTools: ShinobiTool[] = [
       // Best-effort summary compression on closeout. Never blocks closeout.
       let compressed: { provider: string; model: string; chars: number } | null = null;
       let summarySkipReason: string | null = null;
+      let summaryFallbackPersisted = false;
       try {
         const summaryResult = await summarizeProject({ projectId });
         persistSummary(projectId, summaryResult.summary, `${summaryResult.provider}:${summaryResult.model}`);
@@ -372,6 +373,16 @@ export const workflowTools: ShinobiTool[] = [
         // LLM unconfigured or transient failure — surface why but don't fail closeout.
         summarySkipReason = err instanceof Error ? err.message : String(err);
         process.stderr.write(`session_closeout: summary skipped: ${summarySkipReason}\n`);
+        // The calling agent is an LLM too: persist its own session summary so
+        // the brain never goes stale just because the server has no LLM key.
+        try {
+          persistSummary(projectId, summary, 'agent:closeout');
+          summaryFallbackPersisted = true;
+        } catch (persistErr) {
+          process.stderr.write(
+            `session_closeout: fallback summary persist failed: ${persistErr instanceof Error ? persistErr.message : String(persistErr)}\n`,
+          );
+        }
       }
 
       return {
@@ -385,6 +396,7 @@ export const workflowTools: ShinobiTool[] = [
         plan,
         compressed_summary: compressed,
         summary_skip_reason: summarySkipReason,
+        summary_fallback_persisted: summaryFallbackPersisted,
       };
     },
   },
