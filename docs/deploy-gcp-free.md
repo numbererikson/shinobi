@@ -152,7 +152,25 @@ claude mcp add --transport http shinobi https://shinobi.yourdomain.com/mcp \
 - **Upgrades**: `cd ~/shinobi && git pull && docker build -t shinobi . `
   then `docker stop shinobi && docker rm shinobi` and re-run the
   `docker run` command from step 3 (same token). The database lives on the
-  volume and survives.
+  volume and survives. Or skip the manual dance entirely — see
+  **Auto-deploy** below.
+- **Auto-deploy (optional)**: `scripts/vm-autodeploy.sh` turns the upgrade
+  into a cron job on the VM host. Every tick it fetches `origin/main`; when
+  new commits land it builds the image **while the old container keeps
+  serving**, swaps containers carrying over the existing `SHINOBI_*` and
+  provider env vars, health-checks the new one, and rolls back to the
+  previous image if it doesn't come up. Concurrent ticks are guarded by a
+  lock file. Enable it with:
+
+  ```bash
+  ( crontab -l 2>/dev/null; echo "*/5 * * * * $HOME/shinobi/scripts/vm-autodeploy.sh >> $HOME/shinobi-autodeploy.log 2>&1" ) | crontab -
+  tail -f ~/shinobi-autodeploy.log   # watch the first deploy go through
+  ```
+
+  It runs on the **host**, never inside the container (a container cannot
+  `docker rm` itself mid-deploy). Worst-case deploy latency is one cron
+  interval + the e2-micro build time. Anything merged to `main` now reaches
+  production unattended — protect `main` accordingly (require PRs + green CI).
 - **Backups**: the volume survives container replacement but not project
   deletion. Wire `shinobi sync` to a private git repo (git is included in
   the image):
