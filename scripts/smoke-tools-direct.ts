@@ -88,12 +88,17 @@ const boot = (await call('agent_bootstrap', {
   project: { id: number };
   task: { id: number; status: string } | null;
   claimed: boolean;
+  summary_stale: boolean;
+  summary_stale_hint: string | null;
   open_decisions: unknown[];
   recent_activity: unknown[];
 };
-console.log('bootstrap task:', boot.task?.id, 'claimed:', boot.claimed);
+console.log('bootstrap task:', boot.task?.id, 'claimed:', boot.claimed, 'summary_stale:', boot.summary_stale);
 if (boot.project.id !== created.id || boot.task?.id !== t2.id || boot.claimed !== true) {
   throw new Error('agent_bootstrap did not return/claim the selected task');
+}
+if (boot.summary_stale !== true || typeof boot.summary_stale_hint !== 'string') {
+  throw new Error('agent_bootstrap should flag a stale summary on a project with activity and no summary');
 }
 
 const fileCtx = (await call('file_context', {
@@ -120,6 +125,31 @@ const dec = (await call('log_decision', {
   kind: 'library',
 })) as { id: number };
 console.log('decision id', dec.id);
+
+SECTION('cross-device file path matching');
+const decAbs = (await call('log_decision', {
+  project_id: created.id,
+  summary: 'Decision logged from a Windows laptop',
+  rationale: 'files_touched arrives with an absolute laragon path; must match repo-relative lookups',
+  files_touched: ['c:\\laragon\\www\\someapp\\app\\config\\routes.php'],
+  kind: 'pattern',
+})) as { id: number; files_touched: string[] | null };
+if (decAbs.files_touched?.[0] !== 'app/config/routes.php') {
+  throw new Error(`expected normalized files_touched, got ${JSON.stringify(decAbs.files_touched)}`);
+}
+const byRelative = (await call('decisions_for_file', {
+  file_path: 'app/config/routes.php',
+})) as Array<{ id: number }>;
+if (!byRelative.some((d) => d.id === decAbs.id)) {
+  throw new Error('decisions_for_file missed Windows-logged decision via repo-relative path');
+}
+const byOtherAbsolute = (await call('decisions_for_file', {
+  file_path: '/home/user/someapp/app/config/routes.php',
+})) as Array<{ id: number }>;
+if (!byOtherAbsolute.some((d) => d.id === decAbs.id)) {
+  throw new Error('decisions_for_file missed decision via cloud absolute path');
+}
+console.log('cross-device path match OK (windows write → relative + unix lookup)');
 
 await call('log_dead_end', {
   project_id: created.id,
@@ -206,8 +236,14 @@ const closeout = (await call('session_closeout', {
   decisions: Array<{ id: number }>;
   dead_ends: Array<{ id: number }>;
   next_tasks: Array<{ id: number }>;
+  compressed_summary: { provider: string } | null;
+  summary_skip_reason: string | null;
 };
-console.log('closeout note:', closeout.note.id, 'next tasks:', closeout.next_tasks.length);
+console.log(
+  'closeout note:', closeout.note.id,
+  'next tasks:', closeout.next_tasks.length,
+  'summary:', closeout.compressed_summary ? closeout.compressed_summary.provider : `skipped (${closeout.summary_skip_reason})`,
+);
 if (
   closeout.completed_tasks.length !== 1 ||
   closeout.decisions.length !== 1 ||
@@ -215,6 +251,9 @@ if (
   closeout.next_tasks.length !== 1
 ) {
   throw new Error('session_closeout did not create expected records');
+}
+if ((closeout.compressed_summary === null) === (closeout.summary_skip_reason === null)) {
+  throw new Error('session_closeout must report either a compressed summary or a skip reason');
 }
 
 SECTION('cleanup');

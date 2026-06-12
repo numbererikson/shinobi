@@ -1,6 +1,7 @@
 import { getDb } from '../lib/db.js';
 import { escapeFtsQuery } from '../lib/fts.js';
 import { parseJsonOrNull, stringifyOrNull } from '../lib/json.js';
+import { normalizeFilesTouched } from '../lib/paths.js';
 
 export interface NoteRow {
   id: number;
@@ -49,7 +50,7 @@ export function addNote(input: AddNoteInput): Note {
       input.project_id ?? null,
       input.body,
       stringifyOrNull(input.tags),
-      stringifyOrNull(input.files_touched),
+      stringifyOrNull(normalizeFilesTouched(input.files_touched)),
       input.audio_path ?? null,
       input.claude_session_id ?? null,
     );

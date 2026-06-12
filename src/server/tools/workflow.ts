@@ -120,6 +120,14 @@ export const workflowTools: ShinobiTool[] = [
         decisions: decisionsForFile(file, limit),
       }));
 
+      const recentActivity = listActivity({ projectId, limit });
+      // Session-start reads shouldn't count as content the summary missed.
+      const READ_ONLY_ACTIONS = new Set(['agent_bootstrap', 'agent_bootstrap_claim', 'file_context']);
+      const lastMutation = recentActivity.find((a) => !READ_ONLY_ACTIONS.has(a.action_type));
+      const summaryStale =
+        lastMutation !== undefined &&
+        (!project.recent_summary_at || project.recent_summary_at < lastMutation.created_at);
+
       return {
         project,
         session_id: sessionId ?? null,
@@ -132,13 +140,17 @@ export const workflowTools: ShinobiTool[] = [
               provider: project.recent_summary_provider,
             }
           : null,
+        summary_stale: summaryStale,
+        summary_stale_hint: summaryStale
+          ? 'recent_summary is missing or older than the latest project activity. session_closeout refreshes it automatically when an LLM provider is configured (SHINOBI_LLM_PROVIDER); rely on recent_activity and open_decisions until then.'
+          : null,
         context: getContext(projectId),
         latest_plan: getLatestPlan(projectId),
         plan_history: listPlanVersions(projectId).slice(0, limit),
         open_decisions: listDecisions({ projectId, status: 'open', limit }),
         relevant_dead_ends: checkDeadEnds({ projectId, approach: query, files, limit }),
         file_decisions: fileDecisions,
-        recent_activity: listActivity({ projectId, limit }),
+        recent_activity: recentActivity,
         next_action: task
           ? 'Work the selected task. Read recent_summary for last-session context, check relevant_dead_ends and file_decisions before editing, then complete or update the task at closeout.'
           : 'No available task was selected. Create a task or pass task_id/query for focused work.',
@@ -339,6 +351,7 @@ export const workflowTools: ShinobiTool[] = [
 
       // Best-effort summary compression on closeout. Never blocks closeout.
       let compressed: { provider: string; model: string; chars: number } | null = null;
+      let summarySkipReason: string | null = null;
       try {
         const summaryResult = await summarizeProject({ projectId });
         persistSummary(projectId, summaryResult.summary, `${summaryResult.provider}:${summaryResult.model}`);
@@ -356,10 +369,9 @@ export const workflowTools: ShinobiTool[] = [
           entity_id: projectId,
         });
       } catch (err) {
-        // LLM unconfigured or transient failure — log to stderr but don't fail closeout.
-        process.stderr.write(
-          `session_closeout: summary skipped: ${err instanceof Error ? err.message : String(err)}\n`,
-        );
+        // LLM unconfigured or transient failure — surface why but don't fail closeout.
+        summarySkipReason = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`session_closeout: summary skipped: ${summarySkipReason}\n`);
       }
 
       return {
@@ -372,6 +384,7 @@ export const workflowTools: ShinobiTool[] = [
         next_tasks: nextTasks,
         plan,
         compressed_summary: compressed,
+        summary_skip_reason: summarySkipReason,
       };
     },
   },

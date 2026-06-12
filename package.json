@@ -21,6 +21,7 @@
     "docs/github-integration.md",
     "docs/plugin-development.md",
     "docs/plugins.md",
+    "docs/recovery-runbook.md",
     "docs/relay.md",
     "docs/remote-access.md",
     "docs/remote-mcp.md",
@@ -46,7 +47,7 @@
     "smoke:mcp": "node --import tsx scripts/smoke-mcp-stdio.ts",
     "smoke:dashboard": "node --import tsx scripts/smoke-dashboard.ts",
     "smoke:mcp-http": "node --import tsx scripts/smoke-mcp-http.ts",
-    "test": "npm run build && npm run smoke:tools && npm run smoke:mcp && npm run smoke:mcp-http && npm run smoke:dashboard",
+    "test": "npm run build && npm run test:vitest && npm run smoke:tools && npm run smoke:mcp && npm run smoke:mcp-http && npm run smoke:dashboard",
     "test:vitest": "vitest run",
     "test:watch": "vitest"
   },
