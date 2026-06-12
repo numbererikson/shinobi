@@ -58,11 +58,14 @@ function tokenFromRequest(c: Context): string | null {
   }
   const headerToken = c.req.header('x-shinobi-token');
   if (headerToken && headerToken.length > 0) return headerToken;
-  const cookie = getCookie(c, COOKIE_NAME);
-  if (cookie && cookie.length > 0) return cookie;
+  // ?token= must win over the cookie: it is an explicit (re-)login attempt.
+  // After a token rotation the browser still carries the stale cookie — if
+  // the cookie took precedence, the user could never log back in.
   const url = new URL(c.req.url);
   const q = url.searchParams.get('token');
   if (q && q.length > 0) return q;
+  const cookie = getCookie(c, COOKIE_NAME);
+  if (cookie && cookie.length > 0) return cookie;
   return null;
 }
 
