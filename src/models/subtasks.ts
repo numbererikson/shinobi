@@ -1,6 +1,7 @@
 import { getDb } from '../lib/db.js';
 import { escapeFtsQuery } from '../lib/fts.js';
 import { parseJsonOrNull, stringifyOrNull } from '../lib/json.js';
+import { normalizeFilesTouched } from '../lib/paths.js';
 import { PRIORITY_ORDER_SQL } from '../lib/priority.js';
 import type { Priority, Status } from './projects.js';
 
@@ -169,7 +170,7 @@ const UPDATABLE: Record<keyof UpdateSubtaskInput, (v: unknown) => unknown> = {
   due_date: (v) => v ?? null,
   claude_session_id: (v) => v ?? null,
   last_claimed_at: (v) => v ?? null,
-  files_touched: (v) => stringifyOrNull(v),
+  files_touched: (v) => stringifyOrNull(normalizeFilesTouched(v as string[] | null | undefined)),
 };
 
 function detectCircular(id: number, deps: number[]): boolean {

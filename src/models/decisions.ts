@@ -1,6 +1,7 @@
 import { getDb } from '../lib/db.js';
 import { escapeFtsQuery } from '../lib/fts.js';
 import { parseJsonOrNull, stringifyOrNull } from '../lib/json.js';
+import { filePathsMatch, normalizeFilePath, normalizeFilesTouched } from '../lib/paths.js';
 
 export type DecisionKind =
   | 'architecture'
@@ -79,7 +80,7 @@ export function logDecision(input: LogDecisionInput): Decision {
       input.summary,
       input.rationale,
       input.alternatives_considered ?? null,
-      stringifyOrNull(input.files_touched),
+      stringifyOrNull(normalizeFilesTouched(input.files_touched)),
       stringifyOrNull(input.tags),
       input.claude_session_id ?? null,
     );
@@ -155,6 +156,12 @@ export function searchDecisions(query: string, projectId?: number, limit = 20): 
 }
 
 export function decisionsForFile(filePath: string, limit = 50): Decision[] {
+  const normalized = normalizeFilePath(filePath);
+  if (!normalized) return [];
+  // Narrow with the basename so the LIKE matches rows stored either
+  // repo-relative or with a legacy absolute root (backslashes included,
+  // since basenames contain no separators); filePathsMatch is authoritative.
+  const basename = normalized.split('/').pop() ?? normalized;
   const rows = getDb()
     .prepare<[string, number], DecisionRow>(
       `SELECT * FROM decisions
@@ -163,10 +170,11 @@ export function decisionsForFile(filePath: string, limit = 50): Decision[] {
        ORDER BY created_at DESC
        LIMIT ?`,
     )
-    .all(`%${filePath}%`, limit);
+    .all(`%${basename}%`, Math.max(limit * 5, 200));
   return rows
     .map(hydrate)
-    .filter((decision) => decision.files_touched?.includes(filePath) ?? false);
+    .filter((decision) => decision.files_touched?.some((p) => filePathsMatch(p, normalized)) ?? false)
+    .slice(0, limit);
 }
 
 export function updateDecisionStatus(

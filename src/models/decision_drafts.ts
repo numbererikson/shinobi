@@ -1,5 +1,6 @@
 import { getDb } from '../lib/db.js';
 import { parseJsonOrNull, stringifyOrNull } from '../lib/json.js';
+import { normalizeFilesTouched } from '../lib/paths.js';
 import { logDecision, type DecisionKind } from './decisions.js';
 
 export type DraftStatus = 'pending' | 'approved' | 'rejected';
@@ -61,7 +62,7 @@ export function createDraft(input: CreateDraftInput): DecisionDraft {
       input.summary,
       input.rationale,
       input.alternatives_considered ?? null,
-      stringifyOrNull(input.files_touched),
+      stringifyOrNull(normalizeFilesTouched(input.files_touched)),
       input.source ?? null,
       input.extractor_model ?? null,
       input.source_text_hash ?? null,

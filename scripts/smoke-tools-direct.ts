@@ -121,6 +121,31 @@ const dec = (await call('log_decision', {
 })) as { id: number };
 console.log('decision id', dec.id);
 
+SECTION('cross-device file path matching');
+const decAbs = (await call('log_decision', {
+  project_id: created.id,
+  summary: 'Decision logged from a Windows laptop',
+  rationale: 'files_touched arrives with an absolute laragon path; must match repo-relative lookups',
+  files_touched: ['c:\\laragon\\www\\someapp\\app\\config\\routes.php'],
+  kind: 'pattern',
+})) as { id: number; files_touched: string[] | null };
+if (decAbs.files_touched?.[0] !== 'app/config/routes.php') {
+  throw new Error(`expected normalized files_touched, got ${JSON.stringify(decAbs.files_touched)}`);
+}
+const byRelative = (await call('decisions_for_file', {
+  file_path: 'app/config/routes.php',
+})) as Array<{ id: number }>;
+if (!byRelative.some((d) => d.id === decAbs.id)) {
+  throw new Error('decisions_for_file missed Windows-logged decision via repo-relative path');
+}
+const byOtherAbsolute = (await call('decisions_for_file', {
+  file_path: '/home/user/someapp/app/config/routes.php',
+})) as Array<{ id: number }>;
+if (!byOtherAbsolute.some((d) => d.id === decAbs.id)) {
+  throw new Error('decisions_for_file missed decision via cloud absolute path');
+}
+console.log('cross-device path match OK (windows write → relative + unix lookup)');
+
 await call('log_dead_end', {
   project_id: created.id,
   attempted_approach: 'Mock SQLite with an in-memory fake',
