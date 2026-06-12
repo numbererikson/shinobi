@@ -172,6 +172,10 @@ claude mcp add --transport http shinobi https://shinobi.yourdomain.com/mcp \
   The clone lives on the `/data` volume, so credentials and git config
   survive container upgrades.
 
+  Backups are only real once you've restored from one — see the
+  [recovery runbook](recovery-runbook.md) for the tested container/VM/database
+  restore procedures and a drill to run before you depend on this setup.
+
   > ⚠️ If the first push dies with `RPC failed; curl 55 ... unexpected
   > disconnect` (common when sending multi-MB binary snapshots from small
   > VMs over HTTP/2), pin the repo to HTTP/1.1 and raise the post buffer —
