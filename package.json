@@ -1,10 +1,10 @@
 {
   "name": "@shinobiapps/shinobi",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Local-first task spine + memory layer for AI coding agents (Claude Code, Cursor, Cline, Continue.dev, Zed). MCP server + dashboard, npm-installable, zero cloud.",
+  "description": "Task spine + dead-end search + approvals for AI coding agents (Claude Code, Cursor, Cline, Continue.dev, Zed). Past dead ends are semantically searched before your agent writes code. Self-host or hosted — one brain across every device.",
   "type": "module",
   "bin": {
     "shinobi": "./dist/cli.js"
@@ -85,8 +85,9 @@
     "cursor",
     "ai-coding-agents",
     "task-management",
-    "memory",
-    "local-first"
+    "dead-ends",
+    "approvals",
+    "remote-mcp"
   ],
   "license": "MIT",
   "author": "Tomislav Krizan",

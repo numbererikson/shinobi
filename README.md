@@ -5,33 +5,40 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 
-Your AI coding agent forgets every session. Shinobi is the fix — local SQLite + MCP, decisions stick, dead-ends stay logged, approvals come to your phone.
+The task spine for AI coding agents. Shinobi holds the decisions that survive across sessions, **actively searches your past dead ends — semantically — before the agent writes code**, and routes approvals to your phone. One brain, every device: laptop, cloud session, and mobile all wired to the same store.
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
-> **Status:** v0.1 — feature-complete first release. MCP server with 37 tools, web dashboard, plugin system, cross-machine sync, optional semantic recall.
+> **Status:** v0.2 — remote MCP foundation. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. 37 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
 
 ## What it does
 
-Shinobi gives your AI coding agent persistent project memory across sessions:
+Most tools try to be a memory bolt-on. Shinobi is the **task spine** your agent
+works *along* — the durable backbone of work, decisions, and known-bad paths
+that outlives any single session and follows you across every device.
 
-- **Projects + subtasks** — track multi-session work as the agent claims, completes, or pivots
-- **Decisions** — record architectural choices with rationale so future sessions don't re-litigate them
-- **Dead ends** — log approaches that failed; the agent checks here before retrying
-- **Notes** — free-form annotations and voice notes (audio_path field)
+- **Task spine** — projects + subtasks the agent claims, completes, or pivots; the persistent skeleton of multi-session work
+- **Decisions that survive** — record architectural choices with rationale so the next session (on any device) doesn't re-litigate them
+- **Dead ends, searched before you build** — every failed approach is logged and **semantically matched the moment an agent plans a similar one**, so it never burns a second session on the same wall. No other tool does this.
+- **Approvals on your phone** — `request_approval` pushes the decision to your pocket; the agent blocks until you tap yes/no, wherever you are
+- **One brain, every device** — laptop editor, Claude Code cloud session, and mobile chat all hit the same store over remote MCP; no sync step, no per-device drift
 - **Plans** — versioned plan snapshots, retrievable mid-task
 - **Context** — per-project conventions, "don't touch" rules, test patterns, deploy notes, file annotations
 - **Recall** — fulltext (FTS5) by default, semantic (embedding-backed) when an embedding provider is configured
+- **Notes** — free-form annotations and voice notes (audio_path field)
 - **Activity timeline** — every write path lands in the timeline so you can replay what happened
 - **Git linking** — `link_commit` ties commits to subtasks via `[SHI-N]` tags or via `target_path` attribution
-- **Web dashboard** — Hono-served Kanban + decisions + dead ends + notes + plans + context + timeline + analytics on `localhost:8765`
-- **Cross-machine sync** — git-based snapshot push/pull, zero cloud infrastructure
+- **Web dashboard** — Hono-served Kanban + decisions + dead ends + notes + plans + context + timeline + analytics
 - **Plugin system** — drop a `.js` file in `~/.shinobi/plugins/` or install a `@shinobi/plugin-*` npm package and register custom `plugin_*` tools
 
-All local. SQLite. No cloud account required (BYO embedding provider only if you want semantic recall).
+**Hosted or self-hosted, your call.** The default deploy is one remote brain
+behind an HTTP `/mcp` endpoint (we run ours at `shinobi.shinobi-apps.com`); the
+same binary still runs as a fully local single-machine instance when you'd
+rather keep everything on your own box. BYO embedding provider only if you want
+semantic recall.
 
 > 🚀 New here? Follow [Getting started](docs/getting-started.md) — zero to a
-> remembering agent in ten minutes. Going multi-device? [Remote mode](docs/remote-mcp.md)
+> working brain in ten minutes. Going multi-device? [Remote mode](docs/remote-mcp.md)
 > + [$0/month cloud deploy](docs/deploy-gcp-free.md).
 
 ## Install
@@ -209,21 +216,23 @@ Avoid the bare `shinobi` command in MCP config — many clients spawn
 servers with `shell: false`, which skips the OS PATH resolution that
 makes `shinobi` work in a terminal.
 
-### Remote (self-hosted) mode
+### Remote mode (the default deploy)
 
 Host one Shinobi brain on a server and connect every device to it — your
 desktop editor, Claude Code web/mobile sessions, any remote-MCP-capable
 client. `shinobi serve` exposes the MCP endpoint at `/mcp` (streamable HTTP,
-bearer-token auth) alongside the dashboard:
+**stateless**, bearer-token auth) alongside the dashboard:
 
 ```bash
 claude mcp add --transport http shinobi https://your-host/mcp \
   --header "Authorization: Bearer YOUR_TOKEN"
 ```
 
-Local-first stays the default; remote mode is the same binary with a
-different transport. Full deployment guide (Docker, VPS, HTTPS, client
-config): [docs/remote-mcp.md](docs/remote-mcp.md).
+This is the recommended way to run Shinobi — one brain, reachable from every
+device. The same binary still runs as a local single-machine instance if you'd
+rather self-host everything on your own box. Full deployment guide (Docker,
+Cloudflare Tunnel, GCP Always Free, client config):
+[docs/remote-mcp.md](docs/remote-mcp.md).
 
 ## CLI
 
@@ -362,13 +371,16 @@ Restart the MCP client and `mcp__shinobi__plugin_count_open` is available. See [
 
 ## Roadmap
 
-- **v0.1 (current)** — local MCP + dashboard + plugin system + git sync + relay
-  + optional embeddings + voice + mobile push + VS Code/Cursor extensions.
-- **v0.2** — multi-user team mode (auth + members + mentions UI), vite/dev-deps
-  upgrade, plugin marketplace UI polish, deeper integrations (Linear /
-  GitHub Issues sync candidates).
-- **v0.3** — hosted SaaS GA + Stripe billing.
-- **v1.0** — stability, audit, performance pass.
+- **v0.2 (current)** — remote MCP foundation: stateless HTTP `/mcp` endpoint,
+  Docker + GCP Always Free deploy, Cloudflare Tunnel, env-driven `.mcp.json`
+  for cloud sessions. One brain across laptop, cloud, and mobile.
+- **v0.3** — push notifications (task-completed / agent-blocked) → dispatch loop
+  (headless agent pulls `next_task` and works while you sleep) → Shinobi Swarm
+  (N parallel agents, worktree isolation, shared dead ends).
+- **v0.4** — audit→remediation templates (finding list → subtask graph → swarm),
+  unit-test coverage pass on `tools/*`.
+- **v1.0** — stability, security audit, performance pass; optional team mode /
+  hosted SaaS only on demand signal.
 
 ## Changelog
 

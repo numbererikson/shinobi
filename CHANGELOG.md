@@ -5,6 +5,57 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-06-12
+
+Remote MCP foundation — Shinobi becomes a cloud brain reachable from every
+device, and repositions from "memory server" to **task spine + actively-searched
+dead ends + approvals + one brain across laptop, cloud, and mobile**.
+
+### Added
+
+- **Remote HTTP `/mcp` endpoint.** Streamable HTTP transport, **stateless**
+  (every POST is self-contained, so it runs behind a load balancer / tunnel
+  with no sticky sessions), mounted on the existing Hono dashboard server
+  behind the same bearer-token auth. `shinobi serve` now exposes dashboard +
+  MCP in one process. (#1)
+- **Docker container + GCP Always Free deploy guide.** `docs/deploy-gcp-free.md`
+  walks an e2-micro (us-central1) from zero to a running container, including
+  the 2 GB swapfile the build needs on 1 GB RAM. DB persistence fixed for
+  containers via config-dir override so the SQLite store survives
+  `docker rm` / rebuild. (#2)
+- **Env-driven `.mcp.json` pattern for cloud sessions.** Repo `.mcp.json` now
+  uses `${SHINOBI_MCP_URL}` / `${SHINOBI_MCP_TOKEN}` placeholders expanded from
+  the environment, so claude.ai/code cloud sessions get zero-config remote MCP
+  and **tokens never live in the repo**. (#6)
+- **Cloudflare Tunnel setup.** Documented outbound-only exposure (zero open
+  ports, free TLS, no static IP) publishing `shinobi.shinobi-apps.com` →
+  local `/mcp` + dashboard.
+- **`git` in the Docker image** so `shinobi sync push` (nightly backup to the
+  private `shinobi-sync` repo) works inside the container. (#4)
+- **Troubleshooting docs.** curl exit-55 on `sync push` (set
+  `http.version HTTP/1.1` + `http.postBuffer`), and a getting-started guide
+  with both local and remote onboarding paths. (#5, #8)
+
+### Fixed
+
+- **Dashboard re-login after token rotation.** A stale `shinobi_token` cookie
+  shadowed a fresh `?token=` query param, so rotating the token locked you out
+  until you cleared cookies. The query param now takes precedence. (#3)
+
+### Changed
+
+- **Repositioning.** Shinobi is no longer pitched as a local-first "memory
+  layer." The wedge is the task spine, decisions that survive across devices,
+  and dead ends that are **semantically searched before an agent implements a
+  similar approach** — a differentiator no competitor ships. README,
+  `package.json`, and roadmap updated to match.
+- **Cloudflare zone min TLS pinned to 1.2.** The Anthropic egress gateway does
+  not negotiate TLS 1.3; raising the zone minimum to 1.3 breaks **all** MCP
+  calls from cloud sessions (`TLSV1_ALERT_PROTOCOL_VERSION` + 503). Documented
+  as a hard runbook rule. (#7)
+
+[0.2.0]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.0
+
 ## [0.1.6] — 2026-06-04
 
 Dashboard UX: kanban/list naming + clickable subtask cards.
