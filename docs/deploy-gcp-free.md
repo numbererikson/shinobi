@@ -165,3 +165,13 @@ claude mcp add --transport http shinobi https://shinobi.yourdomain.com/mcp \
 
   The clone lives on the `/data` volume, so credentials and git config
   survive container upgrades.
+
+  > ⚠️ If the first push dies with `RPC failed; curl 55 ... unexpected
+  > disconnect` (common when sending multi-MB binary snapshots from small
+  > VMs over HTTP/2), pin the repo to HTTP/1.1 and raise the post buffer —
+  > both stick because the config lives on the volume:
+  >
+  > ```bash
+  > docker exec shinobi git -C /data/sync config http.version HTTP/1.1
+  > docker exec shinobi git -C /data/sync config http.postBuffer 157286400
+  > ```
