@@ -30,6 +30,10 @@ Shinobi gives your AI coding agent persistent project memory across sessions:
 
 All local. SQLite. No cloud account required (BYO embedding provider only if you want semantic recall).
 
+> 🚀 New here? Follow [Getting started](docs/getting-started.md) — zero to a
+> remembering agent in ten minutes. Going multi-device? [Remote mode](docs/remote-mcp.md)
+> + [$0/month cloud deploy](docs/deploy-gcp-free.md).
+
 ## Install
 
 Requirements:
