@@ -110,6 +110,7 @@ import { ensureVapidConfigured, sendPushToAll } from '../services/push/web-push.
 import { broadcastSyncAvailable, getRelayClient } from '../services/relay/client.js';
 import { registerMcpRoutes } from '../server/http.js';
 import { initToolRuntime } from '../server/mcp.js';
+import { authRateLimiter, mcpRateLimiter } from '../lib/rate-limit.js';
 
 export interface StartDashboardOptions {
   port?: number;
@@ -163,6 +164,15 @@ function loadSpaIndex(): string | null {
 
 function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono {
   const app = new Hono();
+
+  // Rate limits sit in front of auth: failed token guesses and magic-link
+  // spam are cut before any timing-safe comparison or DB write happens.
+  const authLimiter = authRateLimiter();
+  app.use('/api/auth/magic-link', authLimiter.middleware);
+  app.use('/api/auth/verify', authLimiter.middleware);
+  if (opts?.mcp) {
+    app.use('/mcp', mcpRateLimiter().middleware);
+  }
 
   if (auth?.enabled) {
     app.use('*', createAuthMiddleware(auth));

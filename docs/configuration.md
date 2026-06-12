@@ -37,6 +37,17 @@ Loopback binds skip the middleware entirely so local development stays zero-fric
 
 Npm-tier plugins are discovered from `node_modules/@shinobi/plugin-*` in the current working directory at server start.
 
+## Rate limits
+
+Public-facing routes are rate limited per client IP (`CF-Connecting-IP` /
+`X-Forwarded-For`, falling back to a shared local bucket). Both windows are
+one minute.
+
+| Variable | Default | Applies to |
+|---|---|---|
+| `SHINOBI_MCP_RATE_LIMIT` | `240` | `POST /mcp` tool calls |
+| `SHINOBI_AUTH_RATE_LIMIT` | `10` | `/api/auth/magic-link`, `/api/auth/verify` |
+
 ## Embeddings (optional)
 
 Shinobi falls back to FTS5 fulltext search by default. Configure a provider to enable semantic recall.

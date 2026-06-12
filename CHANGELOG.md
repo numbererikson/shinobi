@@ -5,6 +5,47 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-06-12
+
+Hardening + cross-device fixes found by dogfooding the remote brain from a
+cloud session, plus pre-launch safety nets.
+
+### Added
+
+- **Rate limiting** on the public surface: `/mcp` (default 240 req/min per
+  client, `SHINOBI_MCP_RATE_LIMIT`) and `/api/auth/magic-link` + `/api/auth/verify`
+  (default 10 req/min, `SHINOBI_AUTH_RATE_LIMIT`). Keyed by
+  `CF-Connecting-IP` / `X-Forwarded-For`, applied before auth so token
+  guessing is cut early. (#12)
+- **Pre-migration database backup.** Pending migrations now snapshot the DB
+  file to `<db>.pre-migrate-<timestamp>` first (3 kept), so a failed
+  forward-only migration is recoverable. Failure messages include the backup
+  path. (#12)
+- **`list_projects brief=true`** — token-light listing (truncated
+  descriptions, no summary blobs) for agents scanning many projects. (#12)
+- **Host-side auto-deploy** for the VM: `scripts/vm-autodeploy.sh`, a cron
+  check-and-deploy with env carry-over, health check, and automatic rollback
+  to the previous image. (#11)
+- **Recovery runbook** (`docs/recovery-runbook.md`): tested restore paths for
+  container/VM/database/Cloudflare failures, phone-only preflight checklist,
+  and a drill. (#9)
+- First **vitest unit suites** (`paths`, `rate-limit`), wired into `npm test`. (#9, #12)
+
+### Fixed
+
+- **Cross-device `files_touched` lookups.** Paths are normalized to
+  repo-relative at write time and matched with a suffix fallback, so
+  decisions logged on one machine (e.g. `c:\laragon\www\...`) are found from
+  any other (`/home/user/...`). Legacy absolute rows keep working without a
+  backfill. (#9)
+- **Stale project summaries.** `session_closeout` now persists the
+  agent-authored summary as `recent_summary_md` (`agent:closeout`) when no
+  server-side LLM is configured — an external LLM key is no longer required
+  to keep the brain fresh. `agent_bootstrap` flags stale summaries
+  (`summary_stale`) and closeout reports `summary_skip_reason`. (#10)
+- **Magic-link token accumulation** — consumed/expired tokens are purged on
+  each issuance. (#12)
+
 ## [0.2.0] — 2026-06-12
 
 Remote MCP foundation — Shinobi becomes a cloud brain reachable from every
