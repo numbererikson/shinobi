@@ -105,6 +105,12 @@ Test from any device: `https://shinobi.yourdomain.com/health` → `{"ok":true}`.
 Opening `/` without a token shows the auth wall — that's the security
 working. Log in once with `https://shinobi.yourdomain.com/?token=YOUR_TOKEN`.
 
+> ⚠️ **Connecting from Claude Code web/cloud sessions?** Set Cloudflare →
+> SSL/TLS → Edge Certificates → **Minimum TLS Version to 1.2**. With a 1.3
+> minimum, Anthropic's egress gateway (which negotiates TLS 1.2) gets a
+> `TLSV1_ALERT_PROTOCOL_VERSION` reject and every MCP call dies with a 503
+> before reaching your server.
+
 ## 5. Migrate an existing local database (optional, one-time)
 
 If you've been running Shinobi locally, move your brain up:
