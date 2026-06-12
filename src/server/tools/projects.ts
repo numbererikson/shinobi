@@ -19,13 +19,18 @@ const PRIORITY_ENUM = ['low', 'medium', 'high', 'urgent'] as const;
 export const projectTools: ShinobiTool[] = [
   {
     name: 'list_projects',
-    description: 'List Shinobi projects with progress. Filter by status, workspace, or include archived.',
+    description: 'List Shinobi projects with progress. Filter by status, workspace, or include archived. Pass brief=true for a token-light listing (truncated descriptions, no summary blobs) and use get_project for full detail.',
     inputSchema: {
       type: 'object',
       properties: {
         include_archived: { type: 'boolean', default: false },
         status: { type: 'string', enum: [...STATUS_ENUM] },
         workspace: { type: 'string', description: 'Filter to one codebase (e.g. shinobi / shinobiapps / sitesnap)' },
+        brief: {
+          type: 'boolean',
+          default: false,
+          description: 'Truncate description to 280 chars and omit recent_summary_md. Saves tokens when scanning many projects.',
+        },
       },
       additionalProperties: false,
     },
@@ -37,7 +42,16 @@ export const projectTools: ShinobiTool[] = [
       if (status) opts.status = status as Status;
       const workspace = getString(args, 'workspace');
       if (workspace) opts.workspace = workspace;
-      return listProjects(opts);
+      const projects = listProjects(opts);
+      if (getBoolean(args, 'brief') !== true) return projects;
+      return projects.map((p) => ({
+        ...p,
+        description:
+          p.description && p.description.length > 280
+            ? `${p.description.slice(0, 280)}… [truncated — get_project ${p.id} for full text]`
+            : p.description,
+        recent_summary_md: null,
+      }));
     },
   },
   {

@@ -26,6 +26,9 @@ export interface IssueResult {
 }
 
 export function issueMagicLink(email: string, ttlMs = DEFAULT_TTL_MS): IssueResult {
+  // Opportunistic cleanup: consumed and expired tokens otherwise accumulate
+  // forever, and issuance is the natural low-frequency hook for the purge.
+  purgeExpiredTokens();
   const normalized = email.toLowerCase().trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     throw new Error('invalid email');

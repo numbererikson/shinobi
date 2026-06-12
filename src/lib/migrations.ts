@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { copyFileSync, existsSync, readdirSync, readFileSync, realpathSync, unlinkSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
 import { argv, exit, stderr, stdout } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import type { Database as DatabaseT } from 'better-sqlite3';
@@ -14,6 +14,43 @@ export interface MigrationResult {
   applied: string[];
   skipped: string[];
   mismatched: string[];
+  /** Set when pending migrations triggered a pre-migration DB file backup. */
+  backup_path: string | null;
+}
+
+const BACKUP_RETENTION = 3;
+
+/**
+ * Copy the DB file aside before applying pending migrations. Migrations are
+ * forward-only with no rollback path, so a failed one would otherwise leave
+ * the user's brain in an undefined state with no way back.
+ */
+function backupBeforeMigrate(db: DatabaseT): string | null {
+  const path = db.name;
+  if (!path || path === ':memory:' || !existsSync(path)) return null;
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch {
+    // best effort — a stale WAL still leaves the main file usable
+  }
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = `${path}.pre-migrate-${stamp}`;
+  copyFileSync(path, backupPath);
+  const dir = dirname(path);
+  const prefix = `${basename(path)}.pre-migrate-`;
+  const backups = readdirSync(dir)
+    .filter((name) => name.startsWith(prefix))
+    .sort();
+  while (backups.length > BACKUP_RETENTION) {
+    const oldest = backups.shift();
+    if (!oldest) break;
+    try {
+      unlinkSync(join(dir, oldest));
+    } catch {
+      // retention is best effort
+    }
+  }
+  return backupPath;
 }
 
 export function migrationsDir(): string {
@@ -58,6 +95,7 @@ export function applyPendingMigrations(
     'INSERT INTO schema_migrations (filename, checksum) VALUES (?, ?)',
   );
 
+  const pending: Array<{ file: string; content: string; checksum: string }> = [];
   for (const file of files) {
     const content = readFileSync(join(dir, file), 'utf-8');
     const checksum = sha256(content);
@@ -71,7 +109,12 @@ export function applyPendingMigrations(
       }
       continue;
     }
+    pending.push({ file, content, checksum });
+  }
 
+  const backupPath = pending.length > 0 ? backupBeforeMigrate(db) : null;
+
+  for (const { file, content, checksum } of pending) {
     const tx = db.transaction(() => {
       db.exec(content);
       record.run(file, checksum);
@@ -81,13 +124,16 @@ export function applyPendingMigrations(
       tx();
       applied.push(file);
     } catch (err) {
+      const restoreHint = backupPath
+        ? `\nA pre-migration backup of the database was saved at: ${backupPath}`
+        : '';
       throw new Error(
-        `Migration failed: ${file}\n${err instanceof Error ? err.message : String(err)}`,
+        `Migration failed: ${file}\n${err instanceof Error ? err.message : String(err)}${restoreHint}`,
       );
     }
   }
 
-  return { applied, skipped, mismatched };
+  return { applied, skipped, mismatched, backup_path: backupPath };
 }
 
 function isMainModule(): boolean {
