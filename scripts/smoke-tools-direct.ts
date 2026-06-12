@@ -238,6 +238,7 @@ const closeout = (await call('session_closeout', {
   next_tasks: Array<{ id: number }>;
   compressed_summary: { provider: string } | null;
   summary_skip_reason: string | null;
+  summary_fallback_persisted: boolean;
 };
 console.log(
   'closeout note:', closeout.note.id,
@@ -254,6 +255,22 @@ if (
 }
 if ((closeout.compressed_summary === null) === (closeout.summary_skip_reason === null)) {
   throw new Error('session_closeout must report either a compressed summary or a skip reason');
+}
+const afterCloseout = (await call('get_project', { project_id: created.id })) as {
+  recent_summary_md: string | null;
+  recent_summary_provider: string | null;
+};
+if (!afterCloseout.recent_summary_md) {
+  throw new Error('recent_summary_md must be populated after closeout (LLM or agent fallback)');
+}
+if (closeout.summary_skip_reason !== null) {
+  if (
+    closeout.summary_fallback_persisted !== true ||
+    afterCloseout.recent_summary_md !== 'Smoke session closeout summary' ||
+    afterCloseout.recent_summary_provider !== 'agent:closeout'
+  ) {
+    throw new Error('without an LLM provider, closeout must persist the agent summary as recent_summary_md');
+  }
 }
 
 SECTION('cleanup');

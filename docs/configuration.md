@@ -51,6 +51,16 @@ Shinobi falls back to FTS5 fulltext search by default. Configure a provider to e
 
 When a provider is configured, write paths (`log_decision`, `log_dead_end`, `add_note`, `create_task`, `bulk_create_tasks`) generate and store embeddings synchronously after the row insert. Read paths (`recall`, `check_dead_ends`) prefer semantic match and fall back to FTS5 when no embedding is available.
 
+## Session summaries (LLM optional)
+
+`session_closeout` always refreshes the project's `recent_summary_md`. With
+`SHINOBI_LLM_PROVIDER` configured (e.g. `groq` + `GROQ_API_KEY`, or `openai`),
+the server compresses recent activity, decisions and dead ends into a terse
+digest. Without a provider it persists the agent-authored closeout summary
+instead (`recent_summary_provider = agent:closeout`) — the calling agent is an
+LLM too, so no external key is required for the brain to stay fresh.
+`agent_bootstrap` flags a stale summary via `summary_stale` either way.
+
 ## Recall mode
 
 `recall` accepts an optional `mode` argument: `auto` (default), `semantic`, or `fulltext`. The `auto` mode picks semantic when an embedding provider is configured, otherwise fulltext.
