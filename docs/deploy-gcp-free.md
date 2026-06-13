@@ -45,19 +45,32 @@ sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapf
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
-Docker + clone + build:
+Install Docker:
 
 ```bash
 sudo apt update && sudo apt install -y docker.io git
 sudo usermod -aG docker $USER
 exit   # reopen SSH so the docker group applies
-
-git clone https://github.com/numbererikson/shinobi && cd shinobi
-docker build -t shinobi .
 ```
 
-> ⏳ The build takes 10–15 minutes on e2-micro and looks frozen during the
-> TypeScript/Vite steps. It isn't. Wait for `Successfully tagged shinobi:latest`.
+Then get the image one of two ways:
+
+**A. Pull the prebuilt image (fastest — recommended).** Released to Docker Hub
+on every version tag, multi-arch (amd64/arm64), no build step:
+
+```bash
+docker pull shinobiapps/shinobi:latest
+```
+
+**B. Build from source** (if you want a specific commit or local changes):
+
+```bash
+git clone https://github.com/numbererikson/shinobi && cd shinobi
+docker build -t shinobiapps/shinobi:latest .
+```
+
+> ⏳ Building on e2-micro takes 10–15 minutes and looks frozen during the
+> TypeScript/Vite steps. It isn't. Prefer the prebuilt pull (A) on the tiny VM.
 
 ## 3. Run it
 
@@ -67,7 +80,7 @@ docker run -d --name shinobi --restart unless-stopped \
   -p 127.0.0.1:8765:8765 \
   -v shinobi-data:/data \
   -e SHINOBI_DASHBOARD_TOKEN=$TOKEN \
-  shinobi
+  shinobiapps/shinobi:latest
 
 curl http://127.0.0.1:8765/health   # → {"ok":true,...}
 ```
