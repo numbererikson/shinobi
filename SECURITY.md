@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The latest released minor (currently v0.1.x) is supported with security
+The latest released minor (currently v0.2.x) is supported with security
 patches. Earlier versions are not.
 
 ## Reporting a Vulnerability

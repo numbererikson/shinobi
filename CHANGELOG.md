@@ -106,6 +106,7 @@ dead ends + approvals + one brain across laptop, cloud, and mobile**.
   calls from cloud sessions (`TLSV1_ALERT_PROTOCOL_VERSION` + 503). Documented
   as a hard runbook rule. (#7)
 
+[0.2.1]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.1
 [0.2.0]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.0
 
 ## [0.1.6] — 2026-06-04
