@@ -64,6 +64,21 @@ describe('checkDeadEnds', () => {
     expect(hits.map((h) => h.id)).toContain(d.id);
   });
 
+  it('matches by file overlap across device path forms', () => {
+    const d = logDeadEnd({
+      project_id: projectId,
+      attempted_approach: 'device path overlap marker',
+      failure_reason: 'nope',
+      files_involved: ['c:\\laragon\\www\\app\\src\\server\\relay.ts'],
+    });
+    const hits = checkDeadEnds({
+      approach: 'zzznomatchzzz2',
+      files: ['/home/user/app/src/server/relay.ts'],
+      projectId,
+    });
+    expect(hits.map((h) => h.id)).toContain(d.id);
+  });
+
   it('scopes matches to the given project', () => {
     const other = createProject({ title: 'other' }).id;
     logDeadEnd({ project_id: other, attempted_approach: 'uniquemarker approach', failure_reason: 'x' });
