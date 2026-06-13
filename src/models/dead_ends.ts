@@ -1,6 +1,7 @@
 import { getDb } from '../lib/db.js';
 import { escapeFtsQuery } from '../lib/fts.js';
 import { parseJsonOrNull, stringifyOrNull } from '../lib/json.js';
+import { filePathsMatch, normalizeFilePath, normalizeFilesTouched } from '../lib/paths.js';
 
 export interface DeadEndRow {
   id: number;
@@ -49,7 +50,7 @@ export function logDeadEnd(input: LogDeadEndInput): DeadEnd {
       input.project_id,
       input.attempted_approach,
       input.failure_reason,
-      stringifyOrNull(input.files_involved),
+      stringifyOrNull(normalizeFilesTouched(input.files_involved)),
       input.never_retry ? 1 : 0,
       input.claude_session_id ?? null,
     );
@@ -124,15 +125,20 @@ export function checkDeadEnds(input: CheckDeadEndsInput): DeadEnd[] {
     for (const row of rows) matches.set(row.id, hydrate(row));
   }
 
-  if (input.files && input.files.length > 0) {
-    const placeholders = input.files.map(() => 'files_involved LIKE ?').join(' OR ');
-    const params: unknown[] = input.files.map((f) => `%${f}%`);
+  const normalizedQuery = (input.files ?? []).map(normalizeFilePath).filter((f) => f.length > 0);
+  if (normalizedQuery.length > 0) {
+    // Narrow with basenames so rows stored either repo-relative or with a
+    // legacy absolute root still surface; filePathsMatch is authoritative
+    // (mirrors decisionsForFile, so dead-end file matching works cross-device).
+    const basenames = normalizedQuery.map((f) => f.split('/').pop() ?? f);
+    const placeholders = basenames.map(() => 'files_involved LIKE ?').join(' OR ');
+    const params: unknown[] = basenames.map((b) => `%${b}%`);
     let projectFilter = '';
     if (input.projectId !== undefined) {
       projectFilter = 'AND project_id = ?';
       params.push(input.projectId);
     }
-    params.push(limit);
+    params.push(Math.max(limit * 5, 200));
     const rows = getDb()
       .prepare<unknown[], DeadEndRow>(
         `SELECT * FROM dead_ends
@@ -146,7 +152,9 @@ export function checkDeadEnds(input: CheckDeadEndsInput): DeadEnd[] {
     for (const row of rows) {
       if (matches.has(row.id)) continue;
       const hydrated = hydrate(row);
-      const overlap = hydrated.files_involved?.some((f) => input.files?.includes(f) ?? false);
+      const overlap = hydrated.files_involved?.some((stored) =>
+        normalizedQuery.some((q) => filePathsMatch(stored, q)),
+      );
       if (overlap) matches.set(row.id, hydrated);
     }
   }
