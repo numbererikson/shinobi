@@ -1,0 +1,17 @@
+# Smithery config — local stdio install of the published npm package.
+# https://smithery.ai/docs/build/project-config/smithery.yaml
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      dbPath:
+        type: string
+        description: Optional SQLite path (SHINOBI_DB_PATH). Defaults to ~/.shinobi/shinobi.db.
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@shinobiapps/shinobi', 'mcp'],
+      env: config.dbPath ? { SHINOBI_DB_PATH: config.dbPath } : {}
+    })

@@ -5,7 +5,10 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.2] — 2026-06-13
+
+Distribution + quality: published artifacts, registry/catalog manifests, first
+unit tests, and the last cross-device consistency gap closed.
 
 ### Added
 
@@ -15,6 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   building from source — notably faster on tiny VMs. Deploy guide updated with
   the prebuilt-pull path. Requires `DOCKERHUB_USERNAME` + `DOCKERHUB_TOKEN`
   repo secrets.
+- **MCP Registry manifest** (`server.json`) + `mcpName` in `package.json`, for
+  publishing to the official Model Context Protocol registry via `mcp-publisher`.
+- **Smithery manifest** (`smithery.yaml`) — local stdio install of the npm
+  package for the Smithery catalog.
+- **First unit tests** (vitest) for the core data layer: subtasks (nextTask
+  dependency gating, circular-dep rejection, ordering, claim/complete, bulk,
+  search), decisions (path normalization, cross-device lookup, status, search),
+  dead-end search (FTS + file overlap, project scoping); plus `paths` and
+  `rate-limit`. Wired into `npm test`.
+
+### Fixed
+
+- **Cross-device dead-end file matching.** `dead_ends.files_involved` is now
+  normalized on write and matched via `filePathsMatch` (basename prefilter +
+  suffix fallback), so a dead end logged on one machine surfaces from
+  `check_dead_ends` on another — closing the last gap from the 0.2.1
+  cross-device work.
+- SECURITY.md supported-version line (v0.1.x → v0.2.x).
 
 ## [0.2.1] — 2026-06-12
 
@@ -106,6 +127,7 @@ dead ends + approvals + one brain across laptop, cloud, and mobile**.
   calls from cloud sessions (`TLSV1_ALERT_PROTOCOL_VERSION` + 503). Documented
   as a hard runbook rule. (#7)
 
+[0.2.2]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.2
 [0.2.1]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.1
 [0.2.0]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.0
 

@@ -1,6 +1,7 @@
 {
   "name": "@shinobiapps/shinobi",
-  "version": "0.2.1",
+  "version": "0.2.2",
+  "mcpName": "io.github.numbererikson/shinobi",
   "publishConfig": {
     "access": "public"
   },
