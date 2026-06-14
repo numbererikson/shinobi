@@ -22,12 +22,13 @@ try {
 import { printInitSummary, printMcpConfig, runInit } from './commands/init.js';
 import { costIngest } from './commands/cost.js';
 import { runDigest } from './commands/digest.js';
+import { runDispatch } from './commands/dispatch.js';
 import { syncInit, syncPull, syncPush, syncStatus } from './commands/sync.js';
 import { startDashboard } from './dashboard/server.js';
 import { applyPendingMigrations } from './lib/migrations.js';
 import { startMcpServer } from './server/mcp.js';
 
-const COMMANDS = ['init', 'mcp', 'dashboard', 'serve', 'migrate', 'sync', 'cost', 'digest'] as const;
+const COMMANDS = ['init', 'mcp', 'dashboard', 'serve', 'migrate', 'sync', 'cost', 'digest', 'dispatch'] as const;
 type Command = (typeof COMMANDS)[number];
 
 function readVersion(): string {
@@ -62,6 +63,10 @@ Commands:
   cost ingest --source <dir>      Override transcript root (e.g. another machine's mirrored directory)
   digest [--workspace W] [--telegram]   Render weekly Markdown summary → ~/.shinobi/digests/YYYY-WW.md
   digest --since YYYY-MM-DD --until YYYY-MM-DD   Custom window (otherwise last 7 days)
+  dispatch [--project N] [--once]       Autonomous loop: pull next_task → run worker → complete/unblock → repeat
+           [--interval S] [--max-failures N]    Idle poll interval (default 30s); halt after N consecutive blocks
+                                  Worker command via SHINOBI_WORKER_CMD (e.g. 'claude -p "$SHINOBI_TASK_PROMPT"');
+                                  unset → dry-run. Task exposed as $SHINOBI_TASK_ID/_TITLE/_PROMPT.
 
 Options:
   --version, -v                   Print the installed shinobi version and exit
@@ -159,6 +164,26 @@ async function dispatchServe(rest: string[]): Promise<void> {
   await startDashboard(options);
 }
 
+async function dispatchDispatch(rest: string[]): Promise<void> {
+  const options: Parameters<typeof runDispatch>[0] = {};
+  for (let i = 0; i < rest.length; i++) {
+    const v = rest[i];
+    if (v === '--project' && rest[i + 1]) options.projectId = Number(rest[++i]);
+    else if (v === '--once') options.once = true;
+    else if (v === '--interval' && rest[i + 1]) options.intervalMs = Number(rest[++i]) * 1000;
+    else if (v === '--max-failures' && rest[i + 1]) options.maxFailures = Number(rest[++i]);
+    else {
+      stderr.write(`dispatch: unknown option "${v}"\n`);
+      exit(1);
+      return;
+    }
+  }
+  const workerCmd = env['SHINOBI_WORKER_CMD'];
+  if (workerCmd) options.workerCmd = workerCmd;
+  applyPendingMigrations();
+  await runDispatch(options);
+}
+
 async function dispatchSync(rest: string[]): Promise<void> {
   const sub = rest[0];
   if (!sub) {
@@ -238,6 +263,9 @@ async function main(): Promise<void> {
       return;
     case 'digest':
       await dispatchDigest(rest);
+      return;
+    case 'dispatch':
+      await dispatchDispatch(rest);
       return;
   }
 }

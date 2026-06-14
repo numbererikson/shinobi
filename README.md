@@ -9,7 +9,7 @@ The task spine for AI coding agents. Shinobi holds the decisions that survive ac
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
-> **Status:** v0.2 — remote MCP foundation. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. 37 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
+> **Status:** v0.2 — remote MCP foundation. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. 38 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
 
 ## What it does
 
@@ -249,9 +249,11 @@ Commands:
   sync push                       Snapshot the DB and commit it to the sync repo
   sync pull                       Restore the DB from the sync repo's snapshot
   sync status                     Show last push/pull timestamps and git status
+  dispatch [--once] [--project N] Autonomous loop: pull next_task → run worker → complete/unblock → repeat
+           [--interval S] [--max-failures N]    Worker via SHINOBI_WORKER_CMD (e.g. 'claude -p "$SHINOBI_TASK_PROMPT"'); unset → dry-run
 ```
 
-## MCP tools (37)
+## MCP tools (38)
 
 | Group | Tools |
 |---|---|

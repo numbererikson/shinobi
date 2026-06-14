@@ -2,7 +2,7 @@
 
 By default Shinobi runs local-first: the MCP server speaks stdio and the
 SQLite database lives in `~/.shinobi/` on one machine. Remote mode exposes the
-same 37 tools over MCP **streamable HTTP** so any MCP client — Claude Code
+same 38 tools over MCP **streamable HTTP** so any MCP client — Claude Code
 (desktop *and* web/mobile sessions), Cursor, Cline, Continue.dev, Zed — can
 share a single brain hosted on a server you control.
 
