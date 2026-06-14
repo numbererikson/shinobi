@@ -1,3 +1,4 @@
+import webpush from 'web-push';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -26,9 +27,14 @@ const fakeRemote = join(sandbox, 'remote.git');
 mkdirSync(projectCwd, { recursive: true });
 
 const dbPath = join(configDir, 'shinobi.db');
+// Throwaway VAPID keys so dispatch/swarm agents reuse them instead of each
+// generating + writing to .env concurrently (which would race the env file).
+const vapid = webpush.generateVAPIDKeys();
 const env: Record<string, string> = {
   SHINOBI_CONFIG_DIR: configDir,
   SHINOBI_DB_PATH: dbPath,
+  SHINOBI_VAPID_PUBLIC_KEY: vapid.publicKey,
+  SHINOBI_VAPID_PRIVATE_KEY: vapid.privateKey,
 };
 process.env['SHINOBI_CONFIG_DIR'] = configDir;
 process.env['SHINOBI_DB_PATH'] = dbPath;
@@ -70,6 +76,24 @@ try {
   }
   console.log(`dispatch OK: task id=${dispTask.id} status=${dispDone.status}`);
   cdbDisp();
+
+  step('swarm --agents 2 --drain --no-worktree (parallel agents drain a backlog, no double-claim)');
+  const { createProject: cpSwarm } = await import('../dist/models/projects.js');
+  const { bulkCreateSubtasks, listSubtasks: lsSwarm } = await import('../dist/models/subtasks.js');
+  const { closeDb: cdbSwarm } = await import('../dist/lib/db.js');
+  const swarmProj = cpSwarm({ title: 'Swarm sentinel' });
+  const swarmTasks = bulkCreateSubtasks(
+    Array.from({ length: 6 }, (_, n) => ({ project_id: swarmProj.id, title: `swarm task ${n + 1}`, sort_order: n })),
+  );
+  cdbSwarm(); // release the handle before the agent processes open the same db
+  console.log(shinobi(['swarm', '--agents', '2', '--drain', '--no-worktree', '--project', String(swarmProj.id)], env));
+  const swarmDone = lsSwarm({ projectId: swarmProj.id });
+  const doneCount = swarmDone.filter((t) => t.status === 'done').length;
+  if (doneCount !== swarmTasks.length) {
+    throw new Error(`swarm left ${swarmTasks.length - doneCount}/${swarmTasks.length} task(s) unfinished`);
+  }
+  console.log(`swarm OK: ${doneCount}/${swarmTasks.length} tasks drained across 2 agents, none stuck`);
+  cdbSwarm();
 
   step('sync init (creates a local repo + a bare remote)');
   execFileSync('git', ['init', '--bare', fakeRemote], { stdio: 'inherit' });

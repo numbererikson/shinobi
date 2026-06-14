@@ -6,9 +6,8 @@
 
 import { recordActivity } from '../../models/activity.js';
 import {
-  claimSubtask,
+  claimNextTask,
   completeSubtask,
-  nextTask,
   updateSubtask,
 } from '../../models/subtasks.js';
 import { sendPushSafe } from '../push/web-push.js';
@@ -39,10 +38,10 @@ export async function runDispatchCycle(opts: RunCycleOptions): Promise<DispatchC
   const { sessionId, worker, projectId } = opts;
   const notifier = opts.notifier ?? defaultNotifier;
 
-  const task = nextTask(projectId !== undefined ? { projectId } : {});
+  // Atomic select-and-claim so parallel swarm agents never grab the same task.
+  const task = claimNextTask(sessionId, projectId !== undefined ? { projectId } : {});
   if (!task) return { outcome: 'idle', task: null, detail: null };
 
-  claimSubtask(task.id, sessionId);
   recordActivity({
     project_id: task.project_id,
     session_id: sessionId,
