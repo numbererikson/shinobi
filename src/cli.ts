@@ -23,12 +23,13 @@ import { printInitSummary, printMcpConfig, runInit } from './commands/init.js';
 import { costIngest } from './commands/cost.js';
 import { runDigest } from './commands/digest.js';
 import { runDispatch } from './commands/dispatch.js';
+import { runSwarm } from './commands/swarm.js';
 import { syncInit, syncPull, syncPush, syncStatus } from './commands/sync.js';
 import { startDashboard } from './dashboard/server.js';
 import { applyPendingMigrations } from './lib/migrations.js';
 import { startMcpServer } from './server/mcp.js';
 
-const COMMANDS = ['init', 'mcp', 'dashboard', 'serve', 'migrate', 'sync', 'cost', 'digest', 'dispatch'] as const;
+const COMMANDS = ['init', 'mcp', 'dashboard', 'serve', 'migrate', 'sync', 'cost', 'digest', 'dispatch', 'swarm'] as const;
 type Command = (typeof COMMANDS)[number];
 
 function readVersion(): string {
@@ -63,10 +64,14 @@ Commands:
   cost ingest --source <dir>      Override transcript root (e.g. another machine's mirrored directory)
   digest [--workspace W] [--telegram]   Render weekly Markdown summary → ~/.shinobi/digests/YYYY-WW.md
   digest --since YYYY-MM-DD --until YYYY-MM-DD   Custom window (otherwise last 7 days)
-  dispatch [--project N] [--once]       Autonomous loop: pull next_task → run worker → complete/unblock → repeat
-           [--interval S] [--max-failures N]    Idle poll interval (default 30s); halt after N consecutive blocks
+  dispatch [--project N] [--once|--drain]   Autonomous loop: pull next_task → run worker → complete/unblock → repeat
+           [--interval S] [--max-failures N]    --once = one cycle; --drain = until backlog empty; else idle-poll (30s)
                                   Worker command via SHINOBI_WORKER_CMD (e.g. 'claude -p "$SHINOBI_TASK_PROMPT"');
                                   unset → dry-run. Task exposed as $SHINOBI_TASK_ID/_TITLE/_PROMPT.
+  swarm --agents N [--project N]        Run N dispatch loops in parallel, each in its own git worktree/branch,
+        [--once|--drain] [--interval S]   all sharing one brain. Atomic claim guarantees no two agents take the
+        [--max-failures N]              same task. --no-worktree runs in the current dir; --keep-worktrees
+        [--no-worktree] [--keep-worktrees]   leaves agent branches for review instead of removing them.
 
 Options:
   --version, -v                   Print the installed shinobi version and exit
@@ -170,6 +175,7 @@ async function dispatchDispatch(rest: string[]): Promise<void> {
     const v = rest[i];
     if (v === '--project' && rest[i + 1]) options.projectId = Number(rest[++i]);
     else if (v === '--once') options.once = true;
+    else if (v === '--drain') options.drain = true;
     else if (v === '--interval' && rest[i + 1]) options.intervalMs = Number(rest[++i]) * 1000;
     else if (v === '--max-failures' && rest[i + 1]) options.maxFailures = Number(rest[++i]);
     else {
@@ -182,6 +188,34 @@ async function dispatchDispatch(rest: string[]): Promise<void> {
   if (workerCmd) options.workerCmd = workerCmd;
   applyPendingMigrations();
   await runDispatch(options);
+}
+
+async function dispatchSwarm(rest: string[]): Promise<void> {
+  const options: Parameters<typeof runSwarm>[0] = { agents: 2 };
+  for (let i = 0; i < rest.length; i++) {
+    const v = rest[i];
+    if (v === '--agents' && rest[i + 1]) options.agents = Number(rest[++i]);
+    else if (v === '--project' && rest[i + 1]) options.projectId = Number(rest[++i]);
+    else if (v === '--once') options.once = true;
+    else if (v === '--drain') options.drain = true;
+    else if (v === '--interval' && rest[i + 1]) options.intervalMs = Number(rest[++i]) * 1000;
+    else if (v === '--max-failures' && rest[i + 1]) options.maxFailures = Number(rest[++i]);
+    else if (v === '--no-worktree') options.useWorktrees = false;
+    else if (v === '--keep-worktrees') options.keepWorktrees = true;
+    else if (v === '--worktree-base' && rest[i + 1]) options.worktreeBase = rest[++i];
+    else {
+      stderr.write(`swarm: unknown option "${v}"\n`);
+      exit(1);
+      return;
+    }
+  }
+  if (!Number.isInteger(options.agents) || options.agents < 1) {
+    stderr.write('swarm: --agents must be a positive integer\n');
+    exit(1);
+    return;
+  }
+  applyPendingMigrations();
+  await runSwarm(options);
 }
 
 async function dispatchSync(rest: string[]): Promise<void> {
@@ -266,6 +300,9 @@ async function main(): Promise<void> {
       return;
     case 'dispatch':
       await dispatchDispatch(rest);
+      return;
+    case 'swarm':
+      await dispatchSwarm(rest);
       return;
   }
 }

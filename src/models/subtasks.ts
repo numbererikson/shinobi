@@ -235,6 +235,21 @@ export function setSubtaskAssignee(id: number, userId: number | null): Subtask |
   return getSubtask(id);
 }
 
+/**
+ * Atomically select the next ready task and claim it in one BEGIN IMMEDIATE
+ * transaction. SQLite serializes the write lock across processes, so N parallel
+ * dispatch loops (the swarm) can never claim the same task: the loser blocks,
+ * re-reads, and gets the next one. Returns null when nothing is ready.
+ */
+export function claimNextTask(sessionId: string, options: NextTaskOptions = {}): Subtask | null {
+  const tx = getDb().transaction((): Subtask | null => {
+    const task = nextTask(options);
+    if (!task) return null;
+    return claimSubtask(task.id, sessionId);
+  });
+  return tx.immediate();
+}
+
 export function completeSubtask(id: number): Subtask | null {
   getDb().prepare(`UPDATE subtasks SET status = 'done' WHERE id = ?`).run(id);
   return getSubtask(id);

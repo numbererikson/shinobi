@@ -14,6 +14,8 @@ import { getRelayClient } from '../services/relay/client.js';
 export interface DispatchOptions {
   projectId?: number;
   once?: boolean;
+  /** Drain the ready backlog then exit, instead of idling for new tasks. */
+  drain?: boolean;
   intervalMs?: number;
   maxFailures?: number;
   workerCmd?: string;
@@ -42,7 +44,7 @@ export async function runDispatch(opts: DispatchOptions): Promise<void> {
   log(
     `starting session=${sessionId} worker=${opts.workerCmd ? 'command' : 'dry-run'}` +
       `${opts.projectId !== undefined ? ` project=${opts.projectId}` : ''}` +
-      `${opts.once ? ' (once)' : ` interval=${Math.round(intervalMs / 1000)}s`}`,
+      `${opts.once ? ' (once)' : opts.drain ? ' (drain)' : ` interval=${Math.round(intervalMs / 1000)}s`}`,
   );
 
   // Relay wake: any peer event (notably sync-available, which auto-pulls a fresh
@@ -87,6 +89,10 @@ export async function runDispatch(opts: DispatchOptions): Promise<void> {
         // idle — no ready task
         if (opts.once) {
           log('idle — no ready task (once)');
+          break;
+        }
+        if (opts.drain) {
+          log('idle — backlog drained, exiting');
           break;
         }
         log(`idle — waiting up to ${Math.round(intervalMs / 1000)}s for a new task`);

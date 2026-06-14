@@ -249,8 +249,10 @@ Commands:
   sync push                       Snapshot the DB and commit it to the sync repo
   sync pull                       Restore the DB from the sync repo's snapshot
   sync status                     Show last push/pull timestamps and git status
-  dispatch [--once] [--project N] Autonomous loop: pull next_task → run worker → complete/unblock → repeat
-           [--interval S] [--max-failures N]    Worker via SHINOBI_WORKER_CMD (e.g. 'claude -p "$SHINOBI_TASK_PROMPT"'); unset → dry-run
+  dispatch [--once|--drain]       Autonomous loop: pull next_task → run worker → complete/unblock → repeat
+           [--project N] [--interval S] [--max-failures N]   Worker via SHINOBI_WORKER_CMD (e.g. 'claude -p "$SHINOBI_TASK_PROMPT"'); unset → dry-run
+  swarm --agents N                N dispatch loops in parallel, each in its own git worktree/branch, one shared
+        [--project N] [--drain]   brain. Atomic claim → no two agents take the same task. --no-worktree / --keep-worktrees
 ```
 
 ## MCP tools (38)

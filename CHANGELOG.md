@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`shinobi swarm --agents N` — run the dispatch loop in parallel.** Spawns N
+  dispatch agents, each in its own git worktree on its own branch (forked from
+  HEAD, so their file edits never collide), all sharing one brain. Coordination
+  is the task spine itself: a new **atomic `claimNextTask`** (select-and-claim in
+  one `BEGIN IMMEDIATE` transaction) guarantees two agents can never grab the
+  same task — the loser blocks, re-reads, and takes the next one. `--no-worktree`
+  runs agents in the current directory; `--keep-worktrees` leaves the agent
+  branches for review. Pitch: a flota that drains the backlog overnight, each
+  task on its own branch for you to merge.
+- **`dispatch --drain`** — process the ready backlog, then exit (vs `--once` =
+  one cycle, or the default idle-poll). The mode the swarm uses to empty a queue
+  and stop.
 - **`shinobi dispatch` — the autonomous dispatch loop.** Pulls the next ready
   task, claims it, runs a worker against it, then completes it (+ "done" push)
   or hands it back to the queue and buzzes you (blocked). Drains the backlog,
