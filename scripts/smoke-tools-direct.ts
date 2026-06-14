@@ -1,6 +1,12 @@
+import webpush from 'web-push';
 import { applyPendingMigrations } from '../src/lib/migrations.js';
 import { closeDb, getDb } from '../src/lib/db.js';
 import { allTools, getTool, registerBuiltins } from '../src/server/tools/index.js';
+
+// Throwaway VAPID keys in-process so notify/push never writes to a real ~/.shinobi/.env.
+const vapid = webpush.generateVAPIDKeys();
+process.env.SHINOBI_VAPID_PUBLIC_KEY = vapid.publicKey;
+process.env.SHINOBI_VAPID_PRIVATE_KEY = vapid.privateKey;
 
 applyPendingMigrations();
 registerBuiltins();
@@ -113,6 +119,34 @@ const fileCtx = (await call('file_context', {
 console.log('file_context files:', fileCtx.files.length);
 if (fileCtx.file_context.length !== 1 || fileCtx.file_context[0]?.file !== 'src/lib/db.ts') {
   throw new Error('file_context did not return expected file guardrail context');
+}
+
+SECTION('notify + complete_task push');
+const notif = (await call('notify', {
+  kind: 'blocked',
+  body: 'Smoke: agent blocked, needs a human call',
+  project_id: created.id,
+  session_id: 'sess-mcp-smoke',
+})) as { kind: string; delivered: { total_devices: number; error: string | null } };
+console.log('notify kind:', notif.kind, 'devices:', notif.delivered.total_devices, 'error:', notif.delivered.error);
+if (notif.kind !== 'blocked' || notif.delivered.error !== null) {
+  throw new Error('notify did not deliver cleanly (expected 0 devices, no error)');
+}
+
+const pushTask = (await call('create_task', {
+  project_id: created.id,
+  title: 'Notify-on-complete smoke task',
+  priority: 'low',
+})) as { id: number };
+const doneWithPush = (await call('complete_task', {
+  subtask_id: pushTask.id,
+  summary: 'done while you slept',
+  notify: true,
+  session_id: 'sess-mcp-smoke',
+})) as { completed: boolean; push?: { total_devices: number; error: string | null } };
+console.log('complete_task push:', doneWithPush.push?.total_devices, 'error:', doneWithPush.push?.error);
+if (!doneWithPush.completed || !doneWithPush.push || doneWithPush.push.error !== null) {
+  throw new Error('complete_task notify:true must complete and report a clean push delivery');
 }
 
 SECTION('decisions + dead_ends + recall');

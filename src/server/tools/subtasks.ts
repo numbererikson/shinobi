@@ -14,7 +14,9 @@ import {
   type CreateSubtaskInput,
 } from '../../models/subtasks.js';
 import { updateRowEmbedding } from '../../services/embedding/store.js';
+import { sendPushSafe } from '../../services/push/web-push.js';
 import {
+  getBoolean,
   getNumber,
   getNumberArray,
   getString,
@@ -274,31 +276,56 @@ export const subtaskTools: ShinobiTool[] = [
   },
   {
     name: 'complete_task',
-    description: 'Mark a subtask as done. Optionally pass a summary that will be attached to the linked session.',
+    description:
+      'Mark a subtask as done. Optionally pass a summary that will be attached to the linked session. Set notify:true to fire a "task done" mobile push (best-effort, never fails the completion) — meant for headless / dispatch-loop agents; leave false for interactive completes so you do not buzz your own phone.',
     inputSchema: {
       type: 'object',
       properties: {
         subtask_id: { type: 'integer' },
         session_id: { type: 'string' },
         summary: { type: 'string' },
+        notify: {
+          type: 'boolean',
+          default: false,
+          description: 'When true, send a "task done" web push to all subscribed devices. Default false.',
+        },
       },
       required: ['subtask_id'],
       additionalProperties: false,
     },
-    handler: (args) => {
+    handler: async (args) => {
       const id = requireNumber(args, 'subtask_id');
+      const summary = getString(args, 'summary');
+      const notify = getBoolean(args, 'notify') ?? false;
       const completed = completeSubtask(id);
+      let push: { total_devices: number; succeeded: number; failed: number; pruned_endpoints: number; error: string | null } | undefined;
       if (completed) {
         recordActivity({
           project_id: completed.project_id,
           session_id: getString(args, 'session_id'),
           action_type: 'complete_task',
-          action_details: getString(args, 'summary') ?? completed.title,
+          action_details: summary ?? completed.title,
           entity_type: 'subtask',
           entity_id: id,
         });
+        if (notify) {
+          const delivery = await sendPushSafe({
+            title: 'Shinobi: task done',
+            body: summary ?? completed.title,
+            tag: `task-${id}`,
+            url: '/',
+            data: { kind: 'task_completed', subtask_id: id },
+          });
+          push = {
+            total_devices: delivery.total,
+            succeeded: delivery.succeeded,
+            failed: delivery.failed,
+            pruned_endpoints: delivery.pruned_endpoints.length,
+            error: delivery.error,
+          };
+        }
       }
-      return { completed: completed !== null, subtask_id: id, subtask: completed };
+      return { completed: completed !== null, subtask_id: id, subtask: completed, ...(push ? { push } : {}) };
     },
   },
   {

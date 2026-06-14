@@ -267,6 +267,7 @@ Commands:
 | Workflow | agent_bootstrap, session_closeout, file_context |
 | Extraction | extract_decisions, compress_session_summary |
 | Approvals | request_approval |
+| Notifications | notify |
 | Plugins | plugin_hello |
 
 ## Architecture
