@@ -72,6 +72,27 @@ export interface PushDeliveryResult {
   pruned_endpoints: string[];
 }
 
+export interface SafePushResult extends PushDeliveryResult {
+  error: string | null;
+}
+
+/**
+ * Best-effort variant of sendPushToAll: never throws. A failure to deliver a
+ * notification must never break the caller's primary flow (e.g. completing a
+ * task or signalling that an agent is blocked). Per-subscription errors are
+ * already absorbed inside sendPushToAll; this also guards VAPID bootstrap.
+ */
+export async function sendPushSafe(payload: PushPayload): Promise<SafePushResult> {
+  try {
+    const result = await sendPushToAll(payload);
+    return { ...result, error: null };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    stderr.write(`web-push: sendPushSafe swallowed error: ${msg.slice(0, 160)}\n`);
+    return { total: 0, succeeded: 0, failed: 0, pruned_endpoints: [], error: msg.slice(0, 500) };
+  }
+}
+
 export async function sendPushToAll(payload: PushPayload): Promise<PushDeliveryResult> {
   ensureVapidConfigured();
   const subscriptions = listSubscriptions();

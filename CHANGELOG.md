@@ -5,6 +5,22 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`notify` tool — fire-and-forget mobile push.** Unlike `request_approval`
+  (which blocks waiting for a tap), `notify` pushes a signal to every subscribed
+  device and returns immediately. Kinds: `task_completed` ("done while you
+  slept"), `blocked` ("I'm stuck, come look"), and `info`. Records to the
+  activity timeline; delivery is best-effort and never throws into the caller's
+  flow. First building block of the autonomous-agents wave (push → dispatch →
+  swarm).
+- **`complete_task` opt-in `notify` flag.** Pass `notify: true` to fire a
+  "task done" push on completion (best-effort — a push failure never fails the
+  completion). Defaults to `false` so interactive completes stay quiet; the
+  headless dispatch loop opts in.
+
 ## [0.2.2] — 2026-06-13
 
 Distribution + quality: published artifacts, registry/catalog manifests, first
