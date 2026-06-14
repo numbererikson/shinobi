@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`shinobi dispatch` — the autonomous dispatch loop.** Pulls the next ready
+  task, claims it, runs a worker against it, then completes it (+ "done" push)
+  or hands it back to the queue and buzzes you (blocked). Drains the backlog,
+  then idles until a new task appears — woken by a relay event (a peer sync
+  auto-pulls a fresh DB) or the poll interval. The worker is your headless agent
+  via `SHINOBI_WORKER_CMD` (e.g. `claude -p "$SHINOBI_TASK_PROMPT"`; the task is
+  exposed as `$SHINOBI_TASK_ID` / `_TITLE` / `_PROMPT`, never string-interpolated
+  into the shell); unset → a safe dry-run. Flags: `--once`, `--project N`,
+  `--interval S`, `--max-failures N` (circuit-breaker against hot-looping on a
+  blocked task). This is the "works while I sleep" engine.
 - **`notify` tool — fire-and-forget mobile push.** Unlike `request_approval`
   (which blocks waiting for a tap), `notify` pushes a signal to every subscribed
   device and returns immediately. Kinds: `task_completed` ("done while you

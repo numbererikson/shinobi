@@ -56,6 +56,21 @@ try {
   step('migrate (idempotent)');
   console.log(shinobi(['migrate'], env));
 
+  step('dispatch --once (dry-run worker drains one task)');
+  const { createProject: cpDisp } = await import('../dist/models/projects.js');
+  const { createSubtask: csDisp, getSubtask: gsDisp } = await import('../dist/models/subtasks.js');
+  const { closeDb: cdbDisp } = await import('../dist/lib/db.js');
+  const dispProj = cpDisp({ title: 'Dispatch sentinel' });
+  const dispTask = csDisp({ project_id: dispProj.id, title: 'auto-dispatched task' });
+  cdbDisp(); // release the SQLite handle before the CLI process opens the same db
+  console.log(shinobi(['dispatch', '--once', '--project', String(dispProj.id)], env));
+  const dispDone = gsDisp(dispTask.id);
+  if (!dispDone || dispDone.status !== 'done') {
+    throw new Error(`dispatch did not complete the task: ${JSON.stringify(dispDone)}`);
+  }
+  console.log(`dispatch OK: task id=${dispTask.id} status=${dispDone.status}`);
+  cdbDisp();
+
   step('sync init (creates a local repo + a bare remote)');
   execFileSync('git', ['init', '--bare', fakeRemote], { stdio: 'inherit' });
   console.log(shinobi(['sync', 'init', syncRepo, 'main'], env));
