@@ -5,10 +5,35 @@ All notable changes to Shinobi will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] — 2026-06-14
+
+The **autonomous agents** wave: Shinobi goes from "one brain, every device" to a
+brain that empties its own backlog. Push signals → an autonomous dispatch loop →
+a parallel swarm. The task spine that already prevents agents from repeating dead
+ends now also lets a flota of agents drain the queue without ever colliding.
 
 ### Added
 
+- **`notify` tool — fire-and-forget mobile push.** Unlike `request_approval`
+  (which blocks waiting for a tap), `notify` pushes a signal to every subscribed
+  device and returns immediately. Kinds: `task_completed` ("done while you
+  slept"), `blocked` ("I'm stuck, come look"), and `info`. Records to the
+  activity timeline; delivery is best-effort and never throws into the caller's
+  flow.
+- **`complete_task` opt-in `notify` flag.** Pass `notify: true` to fire a
+  "task done" push on completion (best-effort — a push failure never fails the
+  completion). Defaults to `false` so interactive completes stay quiet; the
+  headless dispatch loop opts in.
+- **`shinobi dispatch` — the autonomous dispatch loop.** Pulls the next ready
+  task, claims it, runs a worker against it, then completes it (+ "done" push)
+  or hands it back to the queue and buzzes you (blocked). Drains the backlog,
+  then idles until a new task appears — woken by a relay event (a peer sync
+  auto-pulls a fresh DB) or the poll interval. The worker is your headless agent
+  via `SHINOBI_WORKER_CMD` (e.g. `claude -p "$SHINOBI_TASK_PROMPT"`; the task is
+  exposed as `$SHINOBI_TASK_ID` / `_TITLE` / `_PROMPT`, never string-interpolated
+  into the shell); unset → a safe dry-run. Flags: `--once`, `--drain`,
+  `--project N`, `--interval S`, `--max-failures N` (circuit-breaker against
+  hot-looping on a blocked task). This is the "works while I sleep" engine.
 - **`shinobi swarm --agents N` — run the dispatch loop in parallel.** Spawns N
   dispatch agents, each in its own git worktree on its own branch (forked from
   HEAD, so their file edits never collide), all sharing one brain. Coordination
@@ -18,30 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   runs agents in the current directory; `--keep-worktrees` leaves the agent
   branches for review. Pitch: a flota that drains the backlog overnight, each
   task on its own branch for you to merge.
-- **`dispatch --drain`** — process the ready backlog, then exit (vs `--once` =
-  one cycle, or the default idle-poll). The mode the swarm uses to empty a queue
-  and stop.
-- **`shinobi dispatch` — the autonomous dispatch loop.** Pulls the next ready
-  task, claims it, runs a worker against it, then completes it (+ "done" push)
-  or hands it back to the queue and buzzes you (blocked). Drains the backlog,
-  then idles until a new task appears — woken by a relay event (a peer sync
-  auto-pulls a fresh DB) or the poll interval. The worker is your headless agent
-  via `SHINOBI_WORKER_CMD` (e.g. `claude -p "$SHINOBI_TASK_PROMPT"`; the task is
-  exposed as `$SHINOBI_TASK_ID` / `_TITLE` / `_PROMPT`, never string-interpolated
-  into the shell); unset → a safe dry-run. Flags: `--once`, `--project N`,
-  `--interval S`, `--max-failures N` (circuit-breaker against hot-looping on a
-  blocked task). This is the "works while I sleep" engine.
-- **`notify` tool — fire-and-forget mobile push.** Unlike `request_approval`
-  (which blocks waiting for a tap), `notify` pushes a signal to every subscribed
-  device and returns immediately. Kinds: `task_completed` ("done while you
-  slept"), `blocked` ("I'm stuck, come look"), and `info`. Records to the
-  activity timeline; delivery is best-effort and never throws into the caller's
-  flow. First building block of the autonomous-agents wave (push → dispatch →
-  swarm).
-- **`complete_task` opt-in `notify` flag.** Pass `notify: true` to fire a
-  "task done" push on completion (best-effort — a push failure never fails the
-  completion). Defaults to `false` so interactive completes stay quiet; the
-  headless dispatch loop opts in.
+
+### Changed
+
+- `runDispatchCycle` now claims via the atomic `claimNextTask`, closing the
+  `next_task`+`claim` race so even a single dispatch loop is swarm-safe.
+
 
 ## [0.2.2] — 2026-06-13
 

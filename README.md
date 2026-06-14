@@ -9,7 +9,7 @@ The task spine for AI coding agents. Shinobi holds the decisions that survive ac
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
-> **Status:** v0.2 — remote MCP foundation. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. 38 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
+> **Status:** v0.3 — autonomous agents. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. 38 MCP tools, an autonomous dispatch loop + parallel swarm that drains your backlog, web dashboard, mobile approvals, plugin system, optional semantic recall.
 
 ## What it does
 
