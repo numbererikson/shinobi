@@ -66,6 +66,7 @@ Commands:
   digest --since YYYY-MM-DD --until YYYY-MM-DD   Custom window (otherwise last 7 days)
   dispatch [--project N] [--once|--drain]   Autonomous loop: pull next_task → run worker → complete/unblock → repeat
            [--interval S] [--max-failures N]    --once = one cycle; --drain = until backlog empty; else idle-poll (30s)
+                                  --max-failures halts after N consecutive blocked tasks (default 3; 0 = unlimited)
                                   Worker command via SHINOBI_WORKER_CMD (e.g. 'claude -p "$SHINOBI_TASK_PROMPT"');
                                   unset → dry-run. Task exposed as $SHINOBI_TASK_ID/_TITLE/_PROMPT.
   swarm --agents N [--project N]        Run N dispatch loops in parallel, each in its own git worktree/branch,
