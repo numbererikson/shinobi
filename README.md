@@ -9,7 +9,7 @@ The task spine for AI coding agents. Shinobi holds the decisions that survive ac
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
-> **Status:** v0.2 — remote MCP foundation. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. 38 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
+> **Status:** v0.3 — autonomous agents. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. Mobile push, a headless dispatch loop, parallel swarm over git worktrees, and audit→subtask ingestion on top of the remote MCP foundation. 39 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
 
 ## What it does
 
@@ -377,14 +377,16 @@ Restart the MCP client and `mcp__shinobi__plugin_count_open` is available. See [
 
 ## Roadmap
 
-- **v0.2 (current)** — remote MCP foundation: stateless HTTP `/mcp` endpoint,
+- **v0.2** — remote MCP foundation: stateless HTTP `/mcp` endpoint,
   Docker + GCP Always Free deploy, Cloudflare Tunnel, env-driven `.mcp.json`
   for cloud sessions. One brain across laptop, cloud, and mobile.
-- **v0.3** — push notifications (task-completed / agent-blocked) → dispatch loop
-  (headless agent pulls `next_task` and works while you sleep) → Shinobi Swarm
-  (N parallel agents, worktree isolation, shared dead ends).
-- **v0.4** — audit→remediation templates (finding list → subtask graph → swarm),
-  unit-test coverage pass on `tools/*`.
+- **v0.3 (current)** — autonomous agents: push notifications (task-completed /
+  agent-blocked) → dispatch loop (headless agent pulls `next_task` and works
+  while you sleep) → Shinobi Swarm (N parallel agents, worktree isolation,
+  shared dead ends), plus `ingest_findings` (audit → subtask graph → swarm)
+  pulled forward from v0.4.
+- **v0.4** — unit-test coverage pass on `tools/*`; richer remediation templates
+  and finding-source adapters on top of `ingest_findings`.
 - **v1.0** — stability, security audit, performance pass; optional team mode /
   hosted SaaS only on demand signal.
 

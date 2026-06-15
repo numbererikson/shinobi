@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-15
+
+The autonomous-agents wave: the brain now does work, not just remembers it.
+Mobile push (`notify`), the headless `dispatch` loop, parallel `swarm` over git
+worktrees, and `ingest_findings` to turn an audit into a swarm-ready subtask
+graph — finding → fix → done, while you sleep. (39 MCP tools.)
+
 ### Added
 
 - **`ingest_findings` tool — audit/linter/review findings → a subtask graph.**
@@ -171,6 +178,7 @@ dead ends + approvals + one brain across laptop, cloud, and mobile**.
   calls from cloud sessions (`TLSV1_ALERT_PROTOCOL_VERSION` + 503). Documented
   as a hard runbook rule. (#7)
 
+[0.3.0]: https://github.com/numbererikson/shinobi/releases/tag/v0.3.0
 [0.2.2]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.2
 [0.2.1]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.1
 [0.2.0]: https://github.com/numbererikson/shinobi/releases/tag/v0.2.0
