@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies (triggers prepare → dashboard-spa install + build)
         run: npm ci
 
+      - name: Unit tests (vitest)
+        run: npm run test:vitest
+
       - name: Smoke — direct tool invocation
         run: npm run smoke:tools
 
