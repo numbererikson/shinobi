@@ -307,6 +307,37 @@ if (closeout.summary_skip_reason !== null) {
   }
 }
 
+SECTION('ingest_findings → subtask graph');
+const ingest = (await call('ingest_findings', {
+  project_id: created.id,
+  findings: [
+    { title: 'SQLi in query builder', severity: 'critical', file: 'src/db.ts', remediation: 'parameterize' },
+    { title: 'Missing rate limit', severity: 'medium', file: 'src/http.ts' },
+    { title: 'Second issue in db', severity: 'high', file: 'src/db.ts' },
+  ],
+})) as {
+  created: number;
+  task_ids: number[];
+  by_priority: Record<string, number>;
+  same_file_chained: number;
+};
+console.log('ingest created:', ingest.created, 'chained:', ingest.same_file_chained, 'by_priority:', JSON.stringify(ingest.by_priority));
+if (ingest.created !== 3 || ingest.same_file_chained !== 1) {
+  throw new Error('ingest_findings should create 3 tasks with exactly 1 same-file chain');
+}
+const chainedTask = (await call('get_task', { subtask_id: ingest.task_ids[2] })) as {
+  depends_on: number[] | null;
+  priority: string;
+  files_touched: string[] | null;
+};
+if (!chainedTask.depends_on || chainedTask.depends_on[0] !== ingest.task_ids[0]) {
+  throw new Error('same-file finding must depend on the earlier task touching that file');
+}
+if (chainedTask.priority !== 'high' || chainedTask.files_touched?.[0] !== 'src/db.ts') {
+  throw new Error('ingested task should carry the mapped priority + normalized files_touched');
+}
+console.log('ingest_findings OK: same-file chain + priority + files_touched wired');
+
 SECTION('cleanup');
 const del = (await call('delete_project', { project_id: created.id })) as { deleted: boolean };
 console.log('deleted', del.deleted);

@@ -3,6 +3,7 @@ import { contextTools } from './context.js';
 import { deadEndTools } from './dead_ends.js';
 import { decisionTools } from './decisions.js';
 import { extractionTools } from './extraction.js';
+import { findingsTools } from './findings.js';
 import { gitTools } from './git.js';
 import { historyTools } from './history.js';
 import { noteTools } from './notes.js';
@@ -37,6 +38,7 @@ export function registerBuiltins(): void {
     ...pluginTools,
     ...approvalTools,
     ...notifyTools,
+    ...findingsTools,
   ]) {
     appendTool(tool);
   }

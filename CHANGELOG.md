@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`ingest_findings` tool — audit/linter/review findings → a subtask graph.**
+  Maps severity to priority (critical→urgent, high→high, …) and **chains findings
+  on the same file** with `depends_on` so they run sequentially — agents never
+  edit one file in parallel, so their branches don't conflict — while different
+  files fan out across the swarm. Closes the autonomous loop: an AI review
+  generates the work, the swarm fixes it, the dashboard reports done.
 - **`shinobi swarm --agents N` — run the dispatch loop in parallel.** Spawns N
   dispatch agents, each in its own git worktree on its own branch (forked from
   HEAD, so their file edits never collide), all sharing one brain. Coordination
