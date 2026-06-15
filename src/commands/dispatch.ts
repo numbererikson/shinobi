@@ -7,6 +7,7 @@
 import { hostname } from 'node:os';
 import { stdout, stderr } from 'node:process';
 import { runDispatchCycle } from '../services/dispatch/loop.js';
+import { DEFAULT_MAX_FAILURES, blockedBackoffMs, shouldHaltOnBlocked } from '../services/dispatch/backoff.js';
 import { dryRunWorker, spawnCommandWorker } from '../services/dispatch/worker.js';
 import type { Worker } from '../services/dispatch/types.js';
 import { getRelayClient } from '../services/relay/client.js';
@@ -37,6 +38,9 @@ function delay(ms: number): Promise<void> {
 export async function runDispatch(opts: DispatchOptions): Promise<void> {
   const sessionId = `dispatch-${hostname()}-${Date.now().toString(36)}`;
   const intervalMs = opts.intervalMs ?? DEFAULT_INTERVAL_MS;
+  // Default-on so an unattended loop can't hot-loop forever on a blocked task;
+  // pass --max-failures 0 to opt out (unlimited).
+  const maxFailures = opts.maxFailures ?? DEFAULT_MAX_FAILURES;
   const worker: Worker = opts.workerCmd
     ? spawnCommandWorker(opts.workerCmd)
     : dryRunWorker((m) => stderr.write(m + '\n'));
@@ -81,9 +85,15 @@ export async function runDispatch(opts: DispatchOptions): Promise<void> {
       } else if (res.outcome === 'blocked') {
         consecutiveBlocked += 1;
         log(`blocked #${res.task?.id} "${res.task?.title}"${res.detail ? ` — ${res.detail}` : ''}`);
-        if (opts.maxFailures && consecutiveBlocked >= opts.maxFailures) {
-          log(`halting — ${consecutiveBlocked} consecutive blocked tasks (>= max-failures ${opts.maxFailures})`);
+        if (shouldHaltOnBlocked(consecutiveBlocked, maxFailures)) {
+          log(`halting — ${consecutiveBlocked} consecutive blocked tasks (>= max-failures ${maxFailures})`);
           break;
+        }
+        // Back off before retrying so a blocked task can't tight-loop the worker.
+        if (!opts.once) {
+          const backoff = blockedBackoffMs(consecutiveBlocked, intervalMs);
+          log(`backing off ${Math.round(backoff / 1000)}s before retry`);
+          await delay(backoff);
         }
       } else {
         // idle — no ready task
