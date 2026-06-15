@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-06-15
+
+Hardening of the autonomous loop, ahead of launch.
+
+### Fixed
+
+- **Dispatch circuit breaker is on by default.** A blocked task is handed back
+  to the queue and is immediately the next ready task, so an unattended
+  `dispatch`/`swarm` with a worker configured could re-run the same blocked task
+  in a tight loop. `--max-failures` now defaults to **3** (pass `0` for
+  unlimited), and a blocked task now triggers a linear backoff (2s, 4s, 6s…,
+  capped at the poll interval) before retry. The swarm inherits this.
+- Docs: corrected stale MCP tool count (37 → 39) in `architecture.md` and
+  `getting-started.md`; `.gitignore` now excludes `shinobi swarm` worktrees.
+
 ## [0.3.0] — 2026-06-15
 
 The autonomous-agents wave: the brain now does work, not just remembers it.
