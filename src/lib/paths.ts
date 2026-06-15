@@ -25,11 +25,12 @@ const ABSOLUTE_ROOT_PATTERNS: RegExp[] = [
 
 /**
  * Normalize a single path: backslashes to forward slashes, collapse duplicate
- * slashes, strip a recognized absolute workspace root. Unrecognized absolute
- * paths and already-relative paths pass through (slash-normalized) unchanged.
+ * slashes, strip a leading `./` (so `./src/x.ts` and `src/x.ts` match), strip a
+ * recognized absolute workspace root. Unrecognized absolute paths and
+ * already-relative paths pass through (slash-normalized) unchanged.
  */
 export function normalizeFilePath(raw: string): string {
-  let p = raw.trim().replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  let p = raw.trim().replace(/\\/g, '/').replace(/\/{2,}/g, '/').replace(/^(?:\.\/)+/, '');
   for (const pattern of ABSOLUTE_ROOT_PATTERNS) {
     const match = p.match(pattern);
     if (match) {
