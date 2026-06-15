@@ -12,6 +12,9 @@ Thumbs.db
 *.tsbuildinfo
 coverage/
 
+# Swarm git worktrees (created by `shinobi swarm`)
+.shinobi-worktrees/
+
 # Claude Code personal overrides
 .claude/settings.local.json
 

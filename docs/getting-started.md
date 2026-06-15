@@ -32,7 +32,7 @@ for Cursor. For Cline / Continue.dev / Zed, print the snippet instead:
 shinobi init --print-config
 ```
 
-Restart your editor / MCP client. Your agent now has 37 `shinobi` tools.
+Restart your editor / MCP client. Your agent now has 39 `shinobi` tools.
 
 ## 3. Teach the agent to use its memory
 
