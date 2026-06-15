@@ -43,7 +43,7 @@ shinobi/
 │   │       └── registry.ts       — Validate + register plugin tools
 │   ├── server/
 │   │   ├── mcp.ts                — Server boot, ListTools + CallTool handlers
-│   │   └── tools/                — 37 tool definitions
+│   │   └── tools/                — 39 tool definitions
 │   │       ├── types.ts          — ShinobiTool interface
 │   │       ├── registry.ts       — Global tool list + appendTool
 │   │       ├── args.ts           — Typed arg coercion
@@ -66,7 +66,7 @@ shinobi/
 MCP client (Claude Code) ─stdio─→ shinobi mcp
                                     │
                                     ├─ applyPendingMigrations()
-                                    ├─ registerBuiltins()           ← 37 tool defs
+                                    ├─ registerBuiltins()           ← 39 tool defs
                                     ├─ loadDiscoveredPlugins()     ← scan ~/.shinobi/plugins + node_modules/@shinobi/plugin-*
                                     │
                                     └─ Server.connect(StdioServerTransport)
