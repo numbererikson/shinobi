@@ -102,8 +102,15 @@ export default function register(registry) {
 ```
 
 A corrupt or absent value reads back as `null`, so a damaged blob degrades to
-"no state" instead of crashing the host. See `src/plugins/fitness/` for a
-full reference plugin built on this store.
+"no state" instead of crashing the host. A full reference plugin built on this
+store lives in the `shinobi-plugin-example` repository.
+
+### Testing a plugin in-process
+
+`createInProcessRegistry(pluginName)` (from `src/services/plugins/registry.ts`)
+gives you a registry that collects tools locally and exposes real, scoped
+`registry.state`, plus a `call(name, args)` helper — handy for unit tests and
+smoke harnesses without touching the global MCP tool registry.
 
 ## Async handlers
 

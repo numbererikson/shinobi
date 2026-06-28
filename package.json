@@ -48,8 +48,7 @@
     "smoke:mcp": "node --import tsx scripts/smoke-mcp-stdio.ts",
     "smoke:dashboard": "node --import tsx scripts/smoke-dashboard.ts",
     "smoke:mcp-http": "node --import tsx scripts/smoke-mcp-http.ts",
-    "smoke:plugin-fitness": "node --import tsx scripts/smoke-plugin-fitness.ts",
-    "test": "npm run build && npm run test:vitest && npm run smoke:tools && npm run smoke:mcp && npm run smoke:mcp-http && npm run smoke:dashboard && npm run smoke:plugin-fitness",
+    "test": "npm run build && npm run test:vitest && npm run smoke:tools && npm run smoke:mcp && npm run smoke:mcp-http && npm run smoke:dashboard",
     "test:vitest": "vitest run",
     "test:watch": "vitest"
   },
