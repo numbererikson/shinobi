@@ -4,8 +4,8 @@
 #   docker run -d -p 8765:8765 -v shinobi-data:/data \
 #     -e SHINOBI_DASHBOARD_TOKEN=<long-random-token> shinobi
 #
-# The SQLite database lives in /data (SHINOBI_CONFIG_DIR) — always mount a
-# volume there or every restart wipes your project memory.
+# The SQLite database AND installed plugins live in /data — always mount a
+# volume there or every restart wipes your project memory and any plugins.
 # See docs/remote-mcp.md for the full deployment guide.
 
 FROM node:22-slim AS build
@@ -28,6 +28,8 @@ FROM node:22-slim
 ENV NODE_ENV=production \
     SHINOBI_CONFIG_DIR=/data \
     SHINOBI_DB_PATH=/data/shinobi.db \
+    SHINOBI_PLUGINS_DIR=/data/plugins \
+    SHINOBI_PLUGINS_NPM_DIR=/data/plugins-npm \
     SHINOBI_DASHBOARD_PORT=8765
 # git powers `shinobi sync` (DB snapshot push/pull to a private repo) —
 # without it the sync feature is dead inside the container.
