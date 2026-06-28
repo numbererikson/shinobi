@@ -1,6 +1,6 @@
 # Writing a Shinobi plugin
 
-Plugins extend the MCP tool surface without modifying the Shinobi source. They run inside the same Node process and have read-only access to the database via the `ShinobiApi` facade.
+Plugins extend the MCP tool surface without modifying the Shinobi source. They run inside the same Node process. They read the database through the read-only `ShinobiApi` facade, and persist their own state through the writable, per-plugin `registry.state` store.
 
 ## Quick start
 
@@ -65,7 +65,52 @@ getProjectSnapshot(projectId: number): {
 }
 ```
 
-Plugins cannot directly mutate state. If you need writes, return a description of what to write and have the LLM call a built-in tool.
+The `api` facade is read-only over Shinobi's own entities (projects, tasks, decisions, …). To change those, return a description of what to write and have the LLM call a built-in tool. To persist your **own** plugin state, use `registry.state` (below).
+
+## Persistent plugin state (`registry.state`)
+
+The `registry` passed to `register` carries a durable key/value store scoped to
+your plugin's name — one plugin can never read or write another's keys. State is
+JSON-serializable and lives in Shinobi's SQLite database, so it inherits the
+automatic pre-migration backup and `shinobi sync` replication and works behind
+the stateless remote `/mcp` endpoint.
+
+```ts
+interface PluginStateStore {
+  get<T>(key: string): T | null;            // null if absent or unparseable
+  set(key: string, value: unknown): void;   // JSON-serialized
+  delete(key: string): void;
+  update<T>(key: string, mutator: (current: T | null) => T): T; // atomic
+}
+```
+
+Prefer `update` for read-modify-write so concurrent async handlers cannot
+clobber each other — it runs the mutator inside a single SQLite transaction:
+
+```js
+export default function register(registry) {
+  registry.registerTool({
+    name: 'plugin_counter_bump',
+    description: 'Increment a persistent counter',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    handler: () => {
+      const next = registry.state.update('count', (cur) => (cur ?? 0) + 1);
+      return { count: next };
+    },
+  });
+}
+```
+
+A corrupt or absent value reads back as `null`, so a damaged blob degrades to
+"no state" instead of crashing the host. A full reference plugin built on this
+store lives in the `shinobi-plugin-example` repository.
+
+### Testing a plugin in-process
+
+`createInProcessRegistry(pluginName)` (from `src/services/plugins/registry.ts`)
+gives you a registry that collects tools locally and exposes real, scoped
+`registry.state`, plus a `call(name, args)` helper — handy for unit tests and
+smoke harnesses without touching the global MCP tool registry.
 
 ## Async handlers
 
