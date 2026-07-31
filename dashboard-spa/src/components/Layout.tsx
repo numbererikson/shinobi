@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
+import { Companion } from './Companion';
 import { listProjects } from '../lib/api';
 import type { Project } from '../lib/types';
 
@@ -103,6 +104,7 @@ export function Layout() {
       </main>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <Companion />
     </div>
   );
 }

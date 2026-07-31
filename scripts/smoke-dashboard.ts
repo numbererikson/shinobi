@@ -125,6 +125,9 @@ const routes = [
   `/projects/${project.id}/analytics`,
   `/sessions/${encodeURIComponent(sessionId)}`,
   `/api/projects/${project.id}/snapshot`,
+  // Companion answers even when disabled (enabled:false), so the widget can
+  // stay mounted without special-casing a 404.
+  '/api/companion',
 ];
 
 let pass = 0;

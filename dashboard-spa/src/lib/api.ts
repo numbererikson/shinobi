@@ -103,7 +103,7 @@ export interface SettingSpec {
   key: string;
   label: string;
   description: string;
-  group: 'storage' | 'dashboard' | 'embedding' | 'llm' | 'recall' | 'sync';
+  group: 'storage' | 'dashboard' | 'embedding' | 'llm' | 'recall' | 'sync' | 'companion';
   secret?: boolean;
   enumValues?: string[];
   placeholder?: string;
@@ -366,4 +366,28 @@ export function getRelayStatus(): Promise<RelayStatus> {
 
 export function relayBroadcastSync(): Promise<{ ok: boolean; error?: string }> {
   return jsonFetch('/api/relay/broadcast-sync', { method: 'POST', body: '{}' });
+}
+
+// ---- companion (Rin) -------------------------------------------------------
+
+export type CompanionPose = 'idle' | 'talk' | 'celebrate' | 'warn' | 'think' | 'sleep';
+export type CompanionRegister = 'business' | 'cheer' | 'caution' | 'dry' | 'nag';
+
+export interface CompanionSnapshot {
+  enabled: boolean;
+  name: string;
+  locale: 'en' | 'hr';
+  pose: CompanionPose;
+  register: CompanionRegister | null;
+  line: string | null;
+  detail: string | null;
+  trigger: string | null;
+  project_id: number | null;
+  said_at: string | null;
+  fresh: boolean;
+  available_art: CompanionPose[];
+}
+
+export function getCompanion(): Promise<CompanionSnapshot> {
+  return jsonFetch<CompanionSnapshot>('/api/companion');
 }

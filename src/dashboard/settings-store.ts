@@ -9,7 +9,7 @@ export interface SettingSpec {
   key: string;
   label: string;
   description: string;
-  group: 'storage' | 'dashboard' | 'embedding' | 'llm' | 'recall' | 'sync' | 'push' | 'relay' | 'github' | 'telemetry' | 'digest';
+  group: 'storage' | 'dashboard' | 'embedding' | 'llm' | 'recall' | 'sync' | 'push' | 'relay' | 'github' | 'telemetry' | 'digest' | 'companion';
   secret?: boolean;
   enumValues?: string[];
   placeholder?: string;
@@ -54,6 +54,11 @@ export const KNOWN_SETTINGS: SettingSpec[] = [
   // Telemetry (off by default, anonymous, no content ever leaves)
   { key: 'SHINOBI_TELEMETRY', label: 'Anonymous telemetry', description: 'When on, records MCP tool calls + dashboard view hits to a local buffer. Off by default. Inspect at /telemetry. No project content, titles, or usernames are ever included.', group: 'telemetry', enumValues: ['off', 'on'], requiresRestart: true },
   { key: 'SHINOBI_TELEMETRY_ENDPOINT', label: 'Telemetry endpoint (optional)', description: 'HTTPS URL accepting POST {events:[...]} batches. Leave empty to keep events local only.', group: 'telemetry', placeholder: 'https://shinobi-telemetry.example.com/ingest' },
+  // Companion (Rin) — the reactive face on the spine. Off by default.
+  { key: 'SHINOBI_COMPANION', label: 'Companion', description: 'When on, the dashboard shows a companion widget that reacts to real project state — completions, blocks, dead ends, unanswered approvals. Off by default.', group: 'companion', enumValues: ['off', 'on'] },
+  { key: 'SHINOBI_COMPANION_NAME', label: 'Companion name', description: 'What she is called in the widget. Defaults to Rin.', group: 'companion', placeholder: 'Rin' },
+  { key: 'SHINOBI_COMPANION_LOCALE', label: 'Companion language', description: 'Language of her lines.', group: 'companion', enumValues: ['en', 'hr'] },
+  { key: 'SHINOBI_COMPANION_ART_DIR', label: 'Companion art dir', description: 'Directory holding one image per pose (idle, talk, celebrate, warn, think, sleep). Defaults to ~/.shinobi/companion/art. Missing poses fall back to a placeholder.', group: 'companion', placeholder: '~/.shinobi/companion/art' },
   // Weekly digest auto-export
   { key: 'SHINOBI_DIGEST_AUTO', label: 'Auto weekly digest', description: 'When on, the dashboard generates the weekly digest every Sunday 18:00 local time → ~/.shinobi/digests/YYYY-WW.md.', group: 'digest', enumValues: ['off', 'on'], requiresRestart: true },
   { key: 'SHINOBI_TELEGRAM_BOT_TOKEN', label: 'Telegram bot token', description: 'Optional. When set with SHINOBI_TELEGRAM_CHAT_ID, the auto digest is also delivered via Telegram bot.', group: 'digest', secret: true },

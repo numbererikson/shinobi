@@ -12,6 +12,7 @@ const GROUP_LABEL: Record<SettingSpec['group'], string> = {
   llm: 'LLM (extraction + summarization)',
   recall: 'Recall mode',
   sync: 'Sync',
+  companion: 'Companion',
 };
 
 interface Toast {

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Companion widget ("Rin") — a reactive face on the spine.** Off by default
+  (`SHINOBI_COMPANION=on`). A draggable dashboard widget that reads the same
+  `activity` spine everything else writes to and reacts to real project state:
+  a completion reports what closed and what is next, three completions in a row
+  with no block unlock the cheer register, a blocked task warns, the *same*
+  task blocked twice turns dry, and unanswered approvals or an hours-old
+  session with no `session_closeout` get a nag. Trouble outranks progress
+  within a batch, and ambient nudges only fire when nothing else happened, so
+  she never talks over live work. Deliberately not a compliment dispenser —
+  the register is chosen from state, so encouragement means something when it
+  arrives.
+
+  The reactor is a pure function (signals in, reaction + next state out) with
+  its own vitest suite; the only DB access is one read-only module; state lives
+  in `~/.shinobi/companion/state.json` rather than `plugin_state`, so the layer
+  carries no migration dependency. Six artwork poses (`idle`, `talk`,
+  `celebrate`, `warn`, `think`, `sleep`) are read from
+  `~/.shinobi/companion/art/`, with a placeholder for any pose without an
+  image. English and Croatian line catalogs. See `docs/companion.md`.
+
 ## [0.3.1] — 2026-06-15
 
 Hardening of the autonomous loop, ahead of launch.

@@ -94,6 +94,7 @@ import { extractDecisions } from '../services/extraction/decision-extractor.js';
 import { transcribeAudio } from '../services/transcription/whisper.js';
 import { createHash } from 'node:crypto';
 import { KNOWN_SETTINGS, listRedactedSettings, writeEnvPatch } from './settings-store.js';
+import { POSES, artPath, companionSnapshot, type Pose } from '../services/companion/index.js';
 import {
   deleteSubscription,
   listSubscriptions,
@@ -1084,6 +1085,26 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
     return c.json({
       specs: KNOWN_SETTINGS,
       values: listRedactedSettings(),
+    });
+  });
+
+  // Companion (Rin). One poll returns everything the widget needs; when the
+  // feature is off it still answers, with enabled:false, so the widget can stay
+  // mounted and simply render nothing.
+  app.get('/api/companion', (c) => c.json(companionSnapshot()));
+
+  app.get('/api/companion/art/:pose', (c) => {
+    // Whitelisted against POSES rather than sanitized: the pose is used to
+    // build a filesystem path, so only known-good values may ever reach it.
+    const pose = c.req.param('pose') as Pose;
+    if (!POSES.includes(pose)) return c.json({ error: 'unknown pose' }, 404);
+    const path = artPath(pose);
+    if (!path) return c.json({ error: 'no art installed for this pose' }, 404);
+    const ext = path.slice(path.lastIndexOf('.') + 1).toLowerCase();
+    const type = ext === 'jpg' ? 'jpeg' : ext;
+    return c.body(new Uint8Array(readFileSync(path)), 200, {
+      'Content-Type': `image/${type}`,
+      'Cache-Control': 'no-cache',
     });
   });
 
