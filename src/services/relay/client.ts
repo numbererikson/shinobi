@@ -196,11 +196,11 @@ export class RelayClient {
 
   private scheduleAutoPull(): void {
     if (this.pullTimer) clearTimeout(this.pullTimer);
-    this.pullTimer = setTimeout(() => {
+    this.pullTimer = setTimeout(async () => {
       if (this.pullingNow) return;
       this.pullingNow = true;
       try {
-        syncPull();
+        await syncPull();
         stderr.write(`relay: auto-pulled DB snapshot after peer sync-available event\n`);
       } catch (err) {
         this.status.last_error = `auto-pull: ${err instanceof Error ? err.message : String(err)}`;

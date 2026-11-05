@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`sync pull` no longer loses the restore when a server is running.** It
+  raw-copied the snapshot over the live database, so a server holding the DB
+  open checkpointed its own WAL back over the copy — the restore vanished
+  silently and the next `sync push` committed the old (often empty) database.
+  Both the restore and the pre-restore backup now go through SQLite's online
+  backup API, so every open connection sees the restored data. The recovery
+  runbook gains a safe procedure for older images and for restoring an older
+  snapshot from the sync repo's git history.
+
 ## [0.3.1] — 2026-06-15
 
 Hardening of the autonomous loop, ahead of launch.

@@ -1,5 +1,6 @@
+import Database from 'better-sqlite3';
 import { execFileSync, type ExecFileSyncOptionsWithStringEncoding } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { stderr, stdout } from 'node:process';
 import { closeDb, getDb, getDbPath } from '../lib/db.js';
@@ -119,7 +120,7 @@ export async function syncPush(): Promise<void> {
   }
 }
 
-export function syncPull(): void {
+export async function syncPull(): Promise<void> {
   const config = requireSyncConfig();
   assertGitRepo(config.repo_path);
 
@@ -138,18 +139,31 @@ export function syncPull(): void {
     throw new Error(`no snapshot at ${snapshot}. Run \`shinobi sync push\` on the source machine first.`);
   }
 
-  closeDb();
   const dbPath = getDbPath();
   mkdirSync(dirname(dbPath), { recursive: true });
 
+  // Both the pre-restore backup and the restore itself go through SQLite's
+  // online backup API, never a raw file copy. A file copy misses pages still
+  // in the WAL, and copying over a WAL-mode database that another process
+  // (e.g. the running server) has open is silently undone: that process later
+  // checkpoints its own WAL back over the copied file. The backup API writes
+  // through the pager under SQLite's locks, so every open connection sees the
+  // restored pages.
   if (existsSync(dbPath)) {
     const backupPath = `${dbPath}.bak-${Date.now()}`;
-    copyFileSync(dbPath, backupPath);
+    await getDb().backup(backupPath);
     stderr.write(`pre-restore backup: ${backupPath}\n`);
   }
+  closeDb();
 
-  copyFileSync(snapshot, dbPath);
+  const source = new Database(snapshot, { readonly: true, fileMustExist: true });
+  try {
+    await source.backup(dbPath);
+  } finally {
+    source.close();
+  }
   stdout.write(`restored ${dbPath} from ${snapshot}\n`);
+  stdout.write('if a Shinobi server is running against this database, restart it so pending migrations apply\n');
 
   patchConfig({ sync: { ...config, last_pull_at: new Date().toISOString() } });
 }

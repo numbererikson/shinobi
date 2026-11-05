@@ -100,8 +100,37 @@ docker exec shinobi node /app/dist/cli.js sync init /data/sync
 
 # restore: pulls the repo and replaces the live DB with the snapshot
 docker exec shinobi node /app/dist/cli.js sync pull
-docker restart shinobi
+docker restart shinobi   # so pending migrations run against the restored schema
 curl http://127.0.0.1:8765/health
+```
+
+> ⚠️ **Images up to and including 0.3.1:** `sync pull` raw-copies the snapshot
+> over the live file, and the still-running server checkpoints its own WAL
+> back over it — the restore is silently lost, and the next `sync push`
+> commits the empty database. On those images stop the container and restore
+> the file directly instead:
+>
+> ```bash
+> docker stop shinobi
+> docker run --rm -v shinobi-data:/data --entrypoint sh shinobiapps/shinobi:latest \
+>   -c 'cd /data/sync && git pull && cp shinobi.db /data/shinobi.db && rm -f /data/shinobi.db-wal /data/shinobi.db-shm'
+> docker start shinobi
+> ```
+
+### Restoring an older snapshot
+
+Every nightly push is a commit, so a bad snapshot (e.g. an empty database
+pushed by mistake) is never the only copy. With the container stopped, list
+the history and restore a specific commit:
+
+```bash
+docker stop shinobi
+docker run --rm -v shinobi-data:/data --entrypoint sh shinobiapps/shinobi:latest \
+  -c 'cd /data/sync && git log --format="%h %ad %s" --date=iso -10 -- shinobi.db'
+docker run --rm -v shinobi-data:/data --entrypoint sh shinobiapps/shinobi:latest \
+  -c 'cd /data/sync && git show <commit>:shinobi.db > /data/shinobi.db && rm -f /data/shinobi.db-wal /data/shinobi.db-shm'
+docker start shinobi
+docker exec shinobi node /app/dist/cli.js sync push   # make the good DB the latest snapshot again
 ```
 
 Mind the RPO: the snapshot is up to 24h old (nightly cron at 03:00).
