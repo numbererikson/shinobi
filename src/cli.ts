@@ -241,7 +241,7 @@ async function dispatchSync(rest: string[]): Promise<void> {
       await syncPush();
       return;
     case 'pull':
-      syncPull();
+      await syncPull();
       return;
     case 'status':
       syncStatus();

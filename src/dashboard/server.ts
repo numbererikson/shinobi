@@ -412,10 +412,10 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
     }
   });
 
-  app.post('/api/sync/pull', (c) => {
+  app.post('/api/sync/pull', async (c) => {
     try {
       const started = Date.now();
-      syncPull();
+      await syncPull();
       const config = loadConfig();
       return c.json({
         ok: true,
