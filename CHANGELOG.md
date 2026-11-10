@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-11-10
+
+Stateful plugins and safer restores. Ships the fixes merged since 0.3.1 in a
+published image — the 0.3.1 image predates all of them.
+
+### Added
+
+- **Writable per-plugin state (`registry.state`).** Plugins get a durable,
+  scoped key/value store (`get` / `set` / `delete` / atomic `update`) backed by
+  a new `plugin_state` table (migration `0012`), so plugin data rides along
+  with the pre-migration backup and `shinobi sync`. One plugin cannot read or
+  write another's keys. Stateful plugins such as `shinobi-plugin-fitness`
+  require this; on 0.3.1 their tools register but every call fails.
+
 ### Fixed
 
+- **Docker: installed plugins now live on the `/data` volume.** The image sets
+  `SHINOBI_PLUGINS_DIR=/data/plugins` and `SHINOBI_PLUGINS_NPM_DIR=/data/plugins-npm`;
+  before, plugins resolved under `/root` and every container swap wiped them.
 - **`sync pull` no longer loses the restore when a server is running.** It
   raw-copied the snapshot over the live database, so a server holding the DB
   open checkpointed its own WAL back over the copy — the restore vanished
