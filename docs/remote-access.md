@@ -103,8 +103,18 @@ The dashboard ships a web manifest + service worker, so you can install it as
 a PWA — looks like a native app, opens fullscreen. On iOS: Share → Add to Home
 Screen. On Android: ⋮ → Install app.
 
-This also enables push notifications (see `/push` page) which is the killer
-combo with the `request_approval` MCP tool.
+An installed app keeps its own cookies (on iOS it does not share Safari's), so
+the first launch shows a **sign-in page**: enter the dashboard token once. The
+sign-in lasts 30 days. Shinobi 0.7.0 and newer have this page; on older
+versions the installed app has no way to add `?token=`.
+
+This also enables push notifications: ☰ → **Development → Push → Subscribe this
+device**, then **Test push**. On iOS (16.4+) push works only from the installed
+app, not from a Safari tab, and notifications don't show action buttons (Safari
+web push does not support them, as far as current reports go). Tapping one opens
+its `url`, so plugins put the same buttons on their page. Push is the
+killer combo with the `request_approval` MCP tool and with plugin reminders
+(`registry.notify`).
 
 ---
 
