@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Manage plugins from the dashboard, no terminal.** Plugins now has a
+  "Plugins on this server" section:
+  - **Catalog:** one-click installs from a JSON catalog (`SHINOBI_PLUGIN_CATALOG_URL`).
+  - **Install from URL:** https only, a single `.mjs`/`.js` file, max 2 MB,
+    and it must look like a module.
+  - **Check for updates:** compares the content hash with the source URL.
+    **Update** and **Remove** buttons per plugin.
+  - **Restart now:** in Docker the process exits and the restart policy
+    brings it back with the new plugins loaded.
+
+  Sources and hashes are kept in `<plugins dir>/.sources.json`. A banner
+  shows when plugins changed since the last start.
+
+### Added
+
 - **`/mcp/home` endpoint.** It is the same server without the Development
   module, so the Claude app and phone chats load only the home plugins (music,
   AdGuard, reminders, …) instead of ~85 tools. `/mcp` is unchanged. OAuth

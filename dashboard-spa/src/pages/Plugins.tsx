@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Package, Search, Download, Trash2, AlertCircle, CheckCircle2, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { PluginFiles } from '../components/PluginFiles';
 import { Badge } from '../components/ui/Badge';
 import {
   installPlugin,
@@ -104,6 +105,8 @@ export function Plugins() {
           {toast.text}
         </div>
       )}
+
+      <PluginFiles />
 
       <section className="bg-panel border border-border rounded-lg p-5 mb-6">
         <h2 className="text-sm text-text mb-3">Search npm registry</h2>

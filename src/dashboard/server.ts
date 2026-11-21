@@ -42,6 +42,16 @@ import { listPluginPages, renderPluginPage, runPluginPageAction } from '../servi
 import { runPluginPushAction } from '../services/plugins/notify.js';
 import { startPluginScheduler } from '../services/plugins/schedules.js';
 import { registerOAuthRoutes } from './oauth.js';
+import {
+  canSelfRestart,
+  checkPluginUpdates,
+  fetchCatalog,
+  installFromUrl,
+  listPluginFiles,
+  removePluginFile,
+  restartNeeded,
+  updatePluginFile,
+} from '../services/plugins/files.js';
 import { DEVELOPMENT, knownModuleIds, listModules, moduleOfTool, setModuleEnabled } from '../services/modules.js';
 import { allTools } from '../server/tools/registry.js';
 import {
@@ -858,6 +868,70 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
       default:
         return c.json({ ok: true, result: r.result });
     }
+  });
+
+  // ---- Single-file plugins: install from URL / catalog, update, remove, restart ----
+
+  const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+  app.get('/api/plugins/files', (c) =>
+    c.json({ files: listPluginFiles(), restart_needed: restartNeeded(), can_restart: canSelfRestart() }),
+  );
+
+  app.get('/api/plugins/catalog', async (c) => {
+    try {
+      return c.json({ plugins: await fetchCatalog() });
+    } catch (err) {
+      return c.json({ plugins: [], error: errorText(err) });
+    }
+  });
+
+  app.post('/api/plugins/install-url', async (c) => {
+    let body: { url?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'invalid JSON body' }, 400);
+    }
+    if (typeof body.url !== 'string') return c.json({ ok: false, error: 'url required' }, 400);
+    try {
+      return c.json({ ok: true, file: await installFromUrl(body.url), restart_needed: true });
+    } catch (err) {
+      return c.json({ ok: false, error: errorText(err) }, 400);
+    }
+  });
+
+  app.get('/api/plugins/updates', async (c) => c.json({ updates: await checkPluginUpdates() }));
+
+  app.post('/api/plugins/update', async (c) => {
+    let body: { file?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'invalid JSON body' }, 400);
+    }
+    if (typeof body.file !== 'string') return c.json({ ok: false, error: 'file required' }, 400);
+    try {
+      return c.json({ ok: true, file: await updatePluginFile(body.file), restart_needed: true });
+    } catch (err) {
+      return c.json({ ok: false, error: errorText(err) }, 400);
+    }
+  });
+
+  app.delete('/api/plugins/files/:file', (c) => {
+    try {
+      return c.json({ ok: true, removed: removePluginFile(c.req.param('file')), restart_needed: true });
+    } catch (err) {
+      return c.json({ ok: false, error: errorText(err) }, 400);
+    }
+  });
+
+  // Exit and let the container's restart policy start a fresh process, which
+  // (re)loads plugins. Only offered where a supervisor brings us back.
+  app.post('/api/system/restart', (c) => {
+    if (!canSelfRestart()) return c.json({ ok: false, error: 'not running under Docker: restart Shinobi yourself' }, 409);
+    setTimeout(() => process.exit(0), 300);
+    return c.json({ ok: true, restarting: true });
   });
 
   app.post('/api/plugins/search', async (c) => {
