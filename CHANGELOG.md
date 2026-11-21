@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   underneath; for Development that is sessions, voice, approvals, push, relay
   and open projects. Plugins, Settings and Telemetry move to a System section.
   With Development off, `/` lists the modules that are switched on.
+- **Projects close themselves.** When a project's last task is done, the
+  project switches to `done`. Adding, reopening or claiming a task switches it
+  back to `in_progress`. Projects without tasks are left alone. Migration
+  `0014` closes existing projects whose tasks are all done. The dashboard
+  folds finished projects into a collapsible **Done** section, so the main
+  list shows only open work.
 
 ## [0.5.0] — 2026-11-21
 

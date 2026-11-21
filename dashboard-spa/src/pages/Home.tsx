@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { Archive, ChevronDown, ChevronRight } from 'lucide-react';
+import { Archive, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { WorkspaceBadge } from '../components/WorkspaceBadge';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { timeSince } from '../lib/format';
@@ -88,6 +88,7 @@ function ProjectsTable({ rows, dim = false }: { rows: Project[]; dim?: boolean }
 function ProjectsHome() {
   const { projects } = useOutletContext<OutletCtx>();
   const [showArchived, setShowArchived] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [workspaceFilter, setWorkspaceFilter] = useState<string>(() => {
     if (typeof window === 'undefined') return ALL_WORKSPACES;
     return window.localStorage.getItem(WORKSPACE_FILTER_KEY) ?? ALL_WORKSPACES;
@@ -110,7 +111,10 @@ function ProjectsHome() {
     return rows.filter((p) => p.workspace === workspaceFilter);
   }
 
-  const active = applyFilter(projects.filter((p) => !p.archived_at));
+  const notArchived = applyFilter(projects.filter((p) => !p.archived_at));
+  // Finished projects fold away under "Done" so the list shows what is open.
+  const active = notArchived.filter((p) => p.status !== 'done');
+  const done = notArchived.filter((p) => p.status === 'done');
   const archived = applyFilter(projects.filter((p) => p.archived_at));
 
   function onWorkspaceChange(next: string) {
@@ -127,7 +131,7 @@ function ProjectsHome() {
       <header className="flex items-baseline justify-between border-b border-border pb-3 mb-6">
         <h1 className="text-2xl text-text">Projects</h1>
         <span className="text-text-muted text-xs">
-          {active.length} active · {archived.length} archived
+          {active.length} active · {done.length} done · {archived.length} archived
         </span>
       </header>
 
@@ -167,10 +171,24 @@ function ProjectsHome() {
         </div>
       ) : active.length === 0 ? (
         <div className="bg-panel border border-dashed border-border rounded p-6 text-center text-text-muted">
-          No active projects match this workspace filter.
+          No open projects match this workspace filter.
         </div>
       ) : (
         <ProjectsTable rows={active} />
+      )}
+
+      {done.length > 0 && (
+        <section className="mt-8">
+          <button
+            onClick={() => setShowDone((v) => !v)}
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-text-muted hover:text-text mb-3"
+          >
+            {showDone ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Done ({done.length})
+          </button>
+          {showDone && <ProjectsTable rows={done} dim />}
+        </section>
       )}
 
       {archived.length > 0 && (
