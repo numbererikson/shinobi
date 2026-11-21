@@ -1,12 +1,19 @@
 // Web push service: VAPID key bootstrap (auto-generates on first use, persists
-// to ~/.shinobi/.env via settings store) + sendPushToAll helper.
+// to <config dir>/.env via settings store) + sendPushToAll helper.
 
 import webpush from 'web-push';
 import { stderr } from 'node:process';
 import { listSubscriptions, recordSendResult, deleteSubscriptionByEndpoint } from '../../models/push_subscriptions.js';
-import { writeEnvPatch, readEnvFile } from '../../dashboard/settings-store.js';
+import { envPath, writeEnvPatch, readEnvFile } from '../../dashboard/settings-store.js';
 
-const SUBJECT_DEFAULT = 'mailto:operator@shinobi.local';
+/**
+ * The VAPID subject is the contact the push service sees. Apple's push service
+ * rejects a subject it does not accept with 403 BadJwtToken, and the old
+ * default (a mailto: on the reserved .local domain) is exactly that — so the
+ * old value, which earlier versions wrote into .env, is ignored.
+ */
+const LEGACY_SUBJECT = 'mailto:operator@shinobi.local';
+const SUBJECT_FALLBACK = 'https://github.com/numbererikson/shinobi';
 
 let configured = false;
 
@@ -16,12 +23,29 @@ export interface VapidConfig {
   subject: string;
 }
 
+/**
+ * First usable of: .env value, process env, the public https URL of this
+ * Shinobi (SHINOBI_PUBLIC_URL), the project URL.
+ */
+export function resolveVapidSubject(
+  fileValue: string | undefined,
+  envValue: string | undefined,
+  publicUrl: string | undefined,
+): string {
+  for (const v of [fileValue, envValue]) {
+    const s = v?.trim();
+    if (s && s !== LEGACY_SUBJECT) return s;
+  }
+  const url = (publicUrl ?? '').trim().replace(/\/+$/, '');
+  return url.startsWith('https://') ? url : SUBJECT_FALLBACK;
+}
+
 function readVapidFromEnv(): { publicKey: string | null; privateKey: string | null; subject: string } {
   const env = readEnvFile().values;
   return {
     publicKey: env['SHINOBI_VAPID_PUBLIC_KEY'] ?? process.env['SHINOBI_VAPID_PUBLIC_KEY'] ?? null,
     privateKey: env['SHINOBI_VAPID_PRIVATE_KEY'] ?? process.env['SHINOBI_VAPID_PRIVATE_KEY'] ?? null,
-    subject: env['SHINOBI_VAPID_SUBJECT'] ?? process.env['SHINOBI_VAPID_SUBJECT'] ?? SUBJECT_DEFAULT,
+    subject: resolveVapidSubject(env['SHINOBI_VAPID_SUBJECT'], process.env['SHINOBI_VAPID_SUBJECT'], process.env['SHINOBI_PUBLIC_URL']),
   };
 }
 
@@ -38,16 +62,16 @@ export function ensureVapidConfigured(): VapidConfig {
       subject: existing.subject,
     };
   }
-  // Generate fresh pair, persist to ~/.shinobi/.env so they survive restart.
+  // Generate fresh pair, persist to .env so they survive restart. The subject is
+  // not persisted: it is resolved on every start, so a better default applies.
   const generated = webpush.generateVAPIDKeys();
   writeEnvPatch({
     SHINOBI_VAPID_PUBLIC_KEY: generated.publicKey,
     SHINOBI_VAPID_PRIVATE_KEY: generated.privateKey,
-    SHINOBI_VAPID_SUBJECT: existing.subject,
   });
   webpush.setVapidDetails(existing.subject, generated.publicKey, generated.privateKey);
   configured = true;
-  stderr.write(`web-push: generated and persisted new VAPID keypair to ~/.shinobi/.env\n`);
+  stderr.write(`web-push: generated and persisted new VAPID keypair to ${envPath()}\n`);
   return {
     publicKey: generated.publicKey,
     privateKey: generated.privateKey,
@@ -119,8 +143,8 @@ export async function sendPushToAll(payload: PushPayload): Promise<PushDeliveryR
         recordSendResult(sub.id, null);
         out.succeeded++;
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
         const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+        const errMsg = describePushError(err);
         if (statusCode === 404 || statusCode === 410) {
           // Subscription expired/gone — drop it.
           deleteSubscriptionByEndpoint(sub.endpoint);
@@ -129,9 +153,27 @@ export async function sendPushToAll(payload: PushPayload): Promise<PushDeliveryR
           recordSendResult(sub.id, errMsg.slice(0, 500));
         }
         out.failed++;
-        stderr.write(`web-push: send failed for sub#${sub.id} (${statusCode ?? '?'}): ${errMsg.slice(0, 120)}\n`);
+        stderr.write(`web-push: send failed for sub#${sub.id}: ${errMsg.slice(0, 200)}\n`);
       }
     }),
   );
   return out;
+}
+
+/**
+ * "403 BadJwtToken" instead of web-push's bare "Received unexpected response
+ * code": the status and the push service's response body carry the reason.
+ */
+export function describePushError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  const { statusCode, body } = (err ?? {}) as { statusCode?: number; body?: unknown };
+  let reason = typeof body === 'string' ? body.trim() : '';
+  try {
+    const parsed = JSON.parse(reason) as { reason?: unknown };
+    if (typeof parsed.reason === 'string') reason = parsed.reason;
+  } catch {
+    // not JSON: keep the raw text
+  }
+  const parts = [statusCode !== undefined ? String(statusCode) : null, reason || message].filter(Boolean);
+  return parts.join(' ');
 }
