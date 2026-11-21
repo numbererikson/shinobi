@@ -1,10 +1,11 @@
 import { recordActivity } from '../../models/activity.js';
-import { addNote, listNotes } from '../../models/notes.js';
+import { addNote, deleteNote, getNote, listNotes } from '../../models/notes.js';
 import { updateRowEmbedding } from '../../services/embedding/store.js';
 import {
   getNumber,
   getString,
   getStringArray,
+  requireNumber,
   requireString,
 } from './args.js';
 import type { ShinobiTool } from './types.js';
@@ -63,5 +64,31 @@ export const noteTools: ShinobiTool[] = [
         projectId: getNumber(args, 'project_id'),
         limit: getNumber(args, 'limit') ?? 50,
       }),
+  },
+  {
+    name: 'delete_note',
+    description: 'Permanently delete a note (e.g. a test note or one recorded by mistake). Returns the deleted note so it can be re-added if needed.',
+    inputSchema: {
+      type: 'object',
+      properties: { note_id: { type: 'integer' }, session_id: { type: 'string' } },
+      required: ['note_id'],
+      additionalProperties: false,
+    },
+    handler: (args) => {
+      const id = requireNumber(args, 'note_id');
+      const existing = getNote(id);
+      const deleted = deleteNote(id);
+      if (deleted && existing) {
+        recordActivity({
+          project_id: existing.project_id,
+          session_id: getString(args, 'session_id'),
+          action_type: 'delete_note',
+          action_details: existing.body.slice(0, 200),
+          entity_type: 'note',
+          entity_id: id,
+        });
+      }
+      return { deleted, note: existing ? { id: existing.id, project_id: existing.project_id, body: existing.body, tags: existing.tags } : null };
+    },
   },
 ];

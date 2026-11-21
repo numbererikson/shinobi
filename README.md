@@ -9,7 +9,7 @@ The task spine for AI coding agents. Shinobi holds the decisions that survive ac
 
 Works with Claude Code, Cursor, Cline, Continue.dev, Zed — any MCP-compatible client.
 
-> **Status:** v0.3 — autonomous agents. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. Mobile push, a headless dispatch loop, parallel swarm over git worktrees, and audit→subtask ingestion on top of the remote MCP foundation. 39 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
+> **Status:** v0.3 — autonomous agents. Run it as a hosted HTTP `/mcp` brain (the default deploy) or self-host a local instance. Mobile push, a headless dispatch loop, parallel swarm over git worktrees, and audit→subtask ingestion on top of the remote MCP foundation. 40 MCP tools, web dashboard, mobile approvals, plugin system, optional semantic recall.
 
 ## What it does
 
@@ -255,7 +255,7 @@ Commands:
         [--project N] [--drain]   brain. Atomic claim → no two agents take the same task. --no-worktree / --keep-worktrees
 ```
 
-## MCP tools (39)
+## MCP tools (40)
 
 | Group | Tools |
 |---|---|
@@ -263,7 +263,7 @@ Commands:
 | Subtasks | list_tasks, get_task, create_task, bulk_create_tasks, update_subtask, delete_subtask, claim_task, complete_task, next_task |
 | Decisions | log_decision, decisions_for_file, update_decision_status |
 | Dead ends | log_dead_end, check_dead_ends |
-| Notes | add_note, list_notes |
+| Notes | add_note, list_notes, delete_note |
 | Plans | save_plan, get_plan |
 | Context | get_context, update_context |
 | Recall | recall (FTS5 or semantic) |

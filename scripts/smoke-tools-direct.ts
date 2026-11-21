@@ -220,6 +220,12 @@ await call('add_note', {
 });
 const notes = (await call('list_notes', { project_id: created.id })) as unknown[];
 console.log('notes count', notes.length);
+const scratch = (await call('add_note', { project_id: created.id, body: 'scratch note to delete' })) as { id: number };
+const del = (await call('delete_note', { note_id: scratch.id })) as { deleted: boolean };
+if (!del.deleted) throw new Error('delete_note did not delete');
+const after = (await call('list_notes', { project_id: created.id })) as unknown[];
+if (after.length !== notes.length) throw new Error(`delete_note left ${after.length} notes, expected ${notes.length}`);
+console.log('delete_note ok');
 
 await call('update_context', {
   project_id: created.id,
