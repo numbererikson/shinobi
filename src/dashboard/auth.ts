@@ -116,11 +116,17 @@ export function createAuthMiddleware(opts: AuthMiddlewareOptions): MiddlewareHan
       const accept = c.req.header('accept') ?? '';
       if (accept.includes('text/html')) {
         const hint = escHtml(opts.tokenPath ?? '~/.shinobi/dashboard-token');
+        // The sign-in form matters for an installed PWA (iOS home screen): it has
+        // no address bar to append ?token= and does not share Safari's cookies.
         return c.html(
-          `<!doctype html><html><head><meta charset="utf-8"><title>Shinobi — unauthorized</title></head>
+          `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shinobi — sign in</title></head>
 <body style="font-family:-apple-system,Segoe UI,sans-serif;padding:24px;background:#0f1216;color:#d8dee9">
-<h2 style="color:#eceff4">Shinobi dashboard — unauthorized</h2>
-<p>Append <code>?token=YOUR_TOKEN</code> once (we set a cookie) or send <code>Authorization: Bearer YOUR_TOKEN</code>.</p>
+<h2 style="color:#eceff4">Shinobi dashboard — sign in</h2>
+<form method="get" action="${escHtml(path)}" style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+<input type="password" name="token" autocomplete="current-password" placeholder="Dashboard token" required style="flex:1;min-width:220px;padding:10px;font-size:16px;border-radius:6px;border:1px solid #3b4252;background:#1b1f27;color:#eceff4">
+<button type="submit" style="padding:10px 16px;font-size:16px;border-radius:6px;border:0;background:#5e81ac;color:#fff">Sign in</button>
+</form>
+<p>Or append <code>?token=YOUR_TOKEN</code> once (we set a cookie), or send <code>Authorization: Bearer YOUR_TOKEN</code>.</p>
 <p>Token source: env <code>SHINOBI_DASHBOARD_TOKEN</code> or file <code>${hint}</code>.</p>
 </body></html>`,
           401,

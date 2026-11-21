@@ -194,7 +194,13 @@ const cookieOk = setCookie.includes('shinobi_token=');
 console.log(`${cookieOk ? 'PASS' : 'FAIL'}  ?token= promotes to cookie  set-cookie="${setCookie.slice(0, 80)}…"`);
 if (cookieOk) authPass++;
 
-const totalExpected = routes.length + 2 + detailExpectations.length + authExpectations.length + 1;
+// An installed PWA has no address bar: the 401 page must offer a sign-in form.
+const loginPage = await (await authApp.fetch(new Request('http://localhost/push', { headers: { Accept: 'text/html' } }))).text();
+const formOk = loginPage.includes('<form method="get" action="/push"') && loginPage.includes('name="token"');
+console.log(`${formOk ? 'PASS' : 'FAIL'}  401 HTML page offers a sign-in form`);
+if (formOk) authPass++;
+
+const totalExpected = routes.length + 2 + detailExpectations.length + authExpectations.length + 2;
 const totalActual = pass + detailChecks + authPass;
 console.log(`\n${totalActual}/${totalExpected} checks passed`);
 
