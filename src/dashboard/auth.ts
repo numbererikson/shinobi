@@ -5,6 +5,8 @@ import { env } from 'node:process';
 import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { configDir } from '../lib/config.js';
+import { verifyAccessToken } from '../models/oauth.js';
+import { isOAuthOpenPath, resourceMetadataUrl } from './oauth.js';
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 const COOKIE_NAME = 'shinobi_token';
@@ -88,6 +90,8 @@ export interface AuthMiddlewareOptions {
   enabled: boolean;
   token: string | null;
   tokenPath?: string;
+  /** Accept OAuth access tokens on /mcp and leave the OAuth endpoints open. */
+  oauth?: boolean;
 }
 
 export function createAuthMiddleware(opts: AuthMiddlewareOptions): MiddlewareHandler {
@@ -96,11 +100,19 @@ export function createAuthMiddleware(opts: AuthMiddlewareOptions): MiddlewareHan
       return next();
     }
     const path = new URL(c.req.url).pathname;
-    if (OPEN_PATHS.has(path)) {
+    if (OPEN_PATHS.has(path) || (opts.oauth && isOAuthOpenPath(path))) {
       return next();
     }
     const presented = tokenFromRequest(c);
+    // OAuth access tokens (claude.ai connector "Connect" flow) are valid for /mcp only.
+    if (opts.oauth && path === '/mcp' && presented && verifyAccessToken(presented)) {
+      return next();
+    }
     if (!presented || !safeEqual(presented, opts.token)) {
+      if (opts.oauth && path === '/mcp') {
+        // Tells MCP clients where to start the OAuth flow (MCP authorization spec).
+        c.header('WWW-Authenticate', `Bearer resource_metadata="${resourceMetadataUrl(c)}"`);
+      }
       const accept = c.req.header('accept') ?? '';
       if (accept.includes('text/html')) {
         const hint = escHtml(opts.tokenPath ?? '~/.shinobi/dashboard-token');

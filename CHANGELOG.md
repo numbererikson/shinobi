@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **OAuth for the remote `/mcp` endpoint (one-click "Connect" in the Claude
+  app).** It implements the MCP authorization spec:
+  - protected-resource and authorization-server metadata;
+  - dynamic client registration;
+  - authorization code + PKCE (S256);
+  - one-hour access tokens with rotating 90-day refresh tokens.
+
+  The owner approves a client once on a consent page with the dashboard
+  token, or with one click when signed in to the dashboard; a CSRF value
+  guards that path. Codes and tokens are stored hashed (migration `0013`).
+  OAuth tokens only open `/mcp`. Connected apps are listed and revocable
+  under **Settings → Connected apps**. The bearer and `?token=` flows are
+  unchanged. Set `SHINOBI_OAUTH=off` to disable it, and `SHINOBI_PUBLIC_URL`
+  to pin the public origin.
 - **`input` block for plugin pages.** A text field with a submit button. It
   calls one of the plugin's own tools with the typed text as a named argument
   (`{ ...args, [arg]: text }`), e.g. a "say this on the speaker" box. The same

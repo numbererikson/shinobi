@@ -425,3 +425,21 @@ export function runPluginPageAction(id: string, tool: string, args?: Record<stri
     body: JSON.stringify({ tool, args: args ?? {} }),
   });
 }
+
+// ---- OAuth connected apps (Settings) ----
+
+export interface ConnectedApp {
+  client_id: string;
+  client_name: string | null;
+  redirect_hosts: string[];
+  approved_at: string | null;
+  last_used_at: string | null;
+}
+
+export function listConnectedApps(): Promise<{ clients: ConnectedApp[] }> {
+  return jsonFetch<{ clients: ConnectedApp[] }>('/api/oauth/clients');
+}
+
+export function revokeConnectedApp(clientId: string): Promise<{ deleted: boolean }> {
+  return jsonFetch<{ deleted: boolean }>(`/api/oauth/clients/${encodeURIComponent(clientId)}`, { method: 'DELETE' });
+}
