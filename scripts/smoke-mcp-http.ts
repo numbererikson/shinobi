@@ -94,6 +94,14 @@ async function main(): Promise<void> {
     throw new Error(`expected at least 30 tools, got ${tools.tools.length}`);
   }
 
+  console.log('\n-> tools/list on /mcp/home (Development left out)');
+  const homeUrl = `http://127.0.0.1:${port}/mcp/home`;
+  const homeTools = await rpcResult<{ tools: Array<{ name: string }> }>(homeUrl, 'tools/list', {}, 30);
+  if (homeTools.tools.some((t) => t.name === 'create_project')) {
+    throw new Error('/mcp/home must not offer development tools');
+  }
+  console.log(`<- ${homeTools.tools.length} tools (no development tools)`);
+
   console.log('\n-> tools/call create_project');
   const created = await rpcResult<{ content: Array<{ type: string; text: string }> }>(
     url,

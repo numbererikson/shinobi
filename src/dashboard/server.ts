@@ -177,7 +177,9 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
   app.use('/api/auth/magic-link', authLimiter.middleware);
   app.use('/api/auth/verify', authLimiter.middleware);
   if (opts?.mcp) {
-    app.use('/mcp', mcpRateLimiter().middleware);
+    const mcpLimiter = mcpRateLimiter();
+    app.use('/mcp', mcpLimiter.middleware);
+    app.use('/mcp/*', mcpLimiter.middleware);
   }
 
   // OAuth for the remote /mcp endpoint: only meaningful when auth is on and

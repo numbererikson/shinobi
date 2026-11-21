@@ -104,14 +104,15 @@ export function createAuthMiddleware(opts: AuthMiddlewareOptions): MiddlewareHan
       return next();
     }
     const presented = tokenFromRequest(c);
-    // OAuth access tokens (claude.ai connector "Connect" flow) are valid for /mcp only.
-    if (opts.oauth && path === '/mcp' && presented && verifyAccessToken(presented)) {
+    const isMcp = path === '/mcp' || path.startsWith('/mcp/');
+    // OAuth access tokens (claude.ai connector "Connect" flow) are valid for the MCP endpoints only.
+    if (opts.oauth && isMcp && presented && verifyAccessToken(presented)) {
       return next();
     }
     if (!presented || !safeEqual(presented, opts.token)) {
-      if (opts.oauth && path === '/mcp') {
+      if (opts.oauth && isMcp) {
         // Tells MCP clients where to start the OAuth flow (MCP authorization spec).
-        c.header('WWW-Authenticate', `Bearer resource_metadata="${resourceMetadataUrl(c)}"`);
+        c.header('WWW-Authenticate', `Bearer resource_metadata="${resourceMetadataUrl(c, path)}"`);
       }
       const accept = c.req.header('accept') ?? '';
       if (accept.includes('text/html')) {
