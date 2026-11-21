@@ -12,6 +12,7 @@ import {
 import { applyPendingMigrations } from '../lib/migrations.js';
 import { loadDiscoveredPlugins } from '../services/plugins/registry.js';
 import { allTools, getTool, registerBuiltins } from './tools/index.js';
+import { disabledModules, isToolEnabled, moduleOfTool } from '../services/modules.js';
 import { trackEvent } from '../services/telemetry/client.js';
 
 export interface ServerInfo {
@@ -41,13 +42,19 @@ export async function initToolRuntime(): Promise<void> {
 export function buildMcpServer(info: ServerInfo = DEFAULT_INFO): Server {
   const server = new Server(info, { capabilities: { tools: {} } });
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: allTools().map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-    })),
-  }));
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    // Tools of switched-off modules (Settings → Modules) are not offered.
+    const disabled = disabledModules();
+    return {
+      tools: allTools()
+        .filter((tool) => isToolEnabled(tool.name, disabled))
+        .map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+        })),
+    };
+  });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const toolName = request.params.name;
@@ -57,6 +64,13 @@ export function buildMcpServer(info: ServerInfo = DEFAULT_INFO): Server {
     if (!tool) {
       return {
         content: [{ type: 'text', text: `Unknown tool: ${toolName}` }],
+        isError: true,
+      };
+    }
+
+    if (!isToolEnabled(toolName)) {
+      return {
+        content: [{ type: 'text', text: `Tool ${toolName} belongs to module '${moduleOfTool(toolName)}', which is switched off (dashboard → Settings → Modules).` }],
         isError: true,
       };
     }

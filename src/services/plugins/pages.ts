@@ -1,5 +1,6 @@
 import { getTool } from '../../server/tools/registry.js';
 import { findPlugin } from './state.js';
+import { isModuleEnabled } from '../modules.js';
 
 /**
  * Plugin dashboard pages.
@@ -109,6 +110,7 @@ function summary(p: RegisteredPage): PluginPageSummary {
 
 export function listPluginPages(): PluginPageSummary[] {
   return [...pages.values()]
+    .filter((p) => isModuleEnabled(p.plugin))
     .sort((a, b) => (a.def.order ?? 100) - (b.def.order ?? 100) || a.def.title.localeCompare(b.def.title))
     .map(summary);
 }
@@ -277,7 +279,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
 
 export async function renderPluginPage(id: string): Promise<RenderedPluginPage | null> {
   const page = pages.get(id);
-  if (!page) return null;
+  if (!page || !isModuleEnabled(page.plugin)) return null;
   const base = summary(page);
   try {
     const result = await withTimeout(Promise.resolve().then(() => page.def.render()), RENDER_TIMEOUT_MS, `page '${id}'`);
@@ -303,7 +305,7 @@ export type PageActionResult =
 /** Run one of the page's plugin tools (a button press), then re-render the page. */
 export async function runPluginPageAction(id: string, tool: string, args: Record<string, unknown>): Promise<PageActionResult> {
   const page = pages.get(id);
-  if (!page) return { status: 'not_found' };
+  if (!page || !isModuleEnabled(page.plugin)) return { status: 'not_found' };
   if (!ownsTool(page.plugin, tool)) {
     return { status: 'forbidden', error: `tool '${tool}' does not belong to plugin '${page.plugin}'` };
   }

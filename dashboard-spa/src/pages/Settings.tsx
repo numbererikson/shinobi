@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, RotateCw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ConnectedApps } from '../components/ConnectedApps';
+import { ModulesSettings } from '../components/ModulesSettings';
 import { getSettings, patchSettings, type RedactedSetting, type SettingSpec } from '../lib/api';
 
 type DraftValue = string | null;
@@ -170,6 +171,7 @@ export function Settings() {
         </section>
       ))}
 
+      <ModulesSettings />
       <ConnectedApps />
 
       <div className="sticky bottom-0 bg-bg/95 backdrop-blur border-t border-border py-3 -mx-8 px-8 flex justify-end gap-2">

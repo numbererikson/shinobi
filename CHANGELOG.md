@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Modules.** Development and every plugin are now independent modules,
+  each switchable under **Settings → Modules**. Development covers projects,
+  tasks, decisions, dead ends, notes, plans, recall and approvals.
+  - A switched-off module's MCP tools leave `tools/list` and refuse calls with
+    a clear message, and its dashboard pages disappear.
+  - Nothing is deleted.
+  - Everything is on by default, so a fresh install behaves as before.
+  - The state lives in a new `modules` table (migration `0015`).
+  - Endpoints: `GET /api/modules` and `POST /api/modules/toggle`.
+
+### Changed
+
+- **Sidebar by module.** The sidebar lists one entry per module: Development,
+  plus each plugin with a page. The selected module's own navigation shows
+  underneath; for Development that is sessions, voice, approvals, push, relay
+  and open projects. Plugins, Settings and Telemetry move to a System section.
+  With Development off, `/` lists the modules that are switched on.
+
 ## [0.5.0] — 2026-11-21
 
 One-click Connect for the Claude app, text input on plugin pages, more tests.

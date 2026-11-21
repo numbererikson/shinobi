@@ -443,3 +443,26 @@ export function listConnectedApps(): Promise<{ clients: ConnectedApp[] }> {
 export function revokeConnectedApp(clientId: string): Promise<{ deleted: boolean }> {
   return jsonFetch<{ deleted: boolean }>(`/api/oauth/clients/${encodeURIComponent(clientId)}`, { method: 'DELETE' });
 }
+
+// ---- Modules (Settings → Modules) ----
+
+export interface ModuleInfo {
+  id: string;
+  name: string;
+  kind: 'builtin' | 'plugin';
+  enabled: boolean;
+  tools: number;
+  pages: string[];
+  error: string | null;
+}
+
+export function listModules(): Promise<{ modules: ModuleInfo[] }> {
+  return jsonFetch<{ modules: ModuleInfo[] }>('/api/modules');
+}
+
+export function setModuleEnabled(id: string, enabled: boolean): Promise<{ ok: boolean; modules: ModuleInfo[] }> {
+  return jsonFetch<{ ok: boolean; modules: ModuleInfo[] }>('/api/modules/toggle', {
+    method: 'POST',
+    body: JSON.stringify({ id, enabled }),
+  });
+}
