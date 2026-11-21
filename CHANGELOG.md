@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "generated VAPID keypair" log line names the real `.env` path (e.g.
   `/data/.env` in Docker).
 
+### Docs
+
+- `docs/configuration.md`: new Push notifications section (VAPID keys,
+  subject, `SHINOBI_PUBLIC_URL`, reading push errors) and the sign-in page for
+  installed apps.
+
 ## [0.7.1] — 2026-11-21
 
 The iPhone home-screen app is usable: the menu no longer hides under the status bar.

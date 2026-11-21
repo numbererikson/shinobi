@@ -29,6 +29,20 @@ When the dashboard binds to a non-loopback host, every route except `GET /health
 
 Loopback binds skip the middleware entirely so local development stays zero-friction. The token file is created with `0600` permissions on POSIX systems.
 
+Without a credential, a browser gets a sign-in page with a token field. An app installed to a phone's home screen needs it: it has no address bar for `?token=` and does not share the browser's cookies. The sign-in lasts 30 days.
+
+## Push notifications
+
+Phones and browsers subscribe under **Development → Push** in the dashboard. On iPhone (iOS 16.4+) that only works from the app added to the home screen.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SHINOBI_VAPID_PUBLIC_KEY` / `SHINOBI_VAPID_PRIVATE_KEY` | _(generated)_ | Push signing keys. Generated on first use and written to `<config dir>/.env` (`/data/.env` in Docker). Changing them breaks every existing subscription, so devices must subscribe again. |
+| `SHINOBI_VAPID_SUBJECT` | `SHINOBI_PUBLIC_URL` if https, else the project URL | Contact the push service sees: a `mailto:` address or an `https://` URL. Apple's push service rejects some values with `403 BadJwtToken`. The old default `mailto:operator@shinobi.local` (before 0.7.2) was one of them and is now ignored. |
+| `SHINOBI_PUBLIC_URL` | _(none)_ | Public https origin of this Shinobi, e.g. `https://shinobi.example.com`. Used for OAuth metadata and as the default push subject. |
+
+A failed send records the push service's status and reason (e.g. `403 BadJwtToken`, `410` = subscription gone, removed automatically). It shows on the Push page under each device, and in the log: `docker logs shinobi 2>&1 | grep web-push`.
+
 ## Plugins
 
 | Variable | Default | Purpose |
