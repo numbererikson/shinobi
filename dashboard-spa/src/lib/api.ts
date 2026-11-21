@@ -388,6 +388,7 @@ export type PluginBlock =
   | { type: 'list'; items: { title: string; subtitle?: string; badge?: string; tone?: PluginTone }[]; empty?: string }
   | { type: 'progress'; label: string; value: number; max: number; hint?: string }
   | { type: 'actions'; buttons: PluginButton[] }
+  | { type: 'input'; label?: string; placeholder?: string; button: string; tool: string; arg: string; args?: Record<string, unknown>; maxLength: number }
   | { type: 'divider' };
 
 export interface PluginPageSummary {

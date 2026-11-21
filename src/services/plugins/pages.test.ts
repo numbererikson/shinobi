@@ -142,3 +142,24 @@ describe('renderPluginPage / runPluginPageAction', () => {
     expect(failed).toMatchObject({ status: 'failed', error: 'no speaker', page: { id: 'music' } });
   });
 });
+
+describe('input block', () => {
+  it('keeps a text field bound to an own tool and drops foreign tools or bad arg names', () => {
+    plugin('user/m', { plugin_m_say: () => 'ok' });
+    plugin('user/x', { plugin_x_wipe: () => 'gone' });
+    const blocks = sanitizeBlocks(
+      [
+        { type: 'input', label: 'Announce', placeholder: 'Lunch is ready', button: 'Say', tool: 'plugin_m_say', arg: 'text', args: { wait: false }, maxLength: 99999 },
+        { type: 'input', button: 'Steal', tool: 'plugin_x_wipe', arg: 'text' },
+        { type: 'input', button: 'Bad', tool: 'plugin_m_say', arg: 'not valid!' },
+        { type: 'input', tool: 'plugin_m_say', arg: 'text' },
+      ],
+      'user/m',
+    );
+    expect(blocks).toEqual([
+      { type: 'input', label: 'Announce', placeholder: 'Lunch is ready', button: 'Say', tool: 'plugin_m_say', arg: 'text', args: { wait: false }, maxLength: 2000 },
+      { type: 'input', button: 'Send', tool: 'plugin_m_say', arg: 'text', maxLength: 500 },
+    ]);
+  });
+});
+
