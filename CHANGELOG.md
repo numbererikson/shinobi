@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Push to iPhone failed with 403.** Apple's push service rejects the old
+  default VAPID subject `mailto:operator@shinobi.local`. The subject is now
+  resolved on every start: `SHINOBI_VAPID_SUBJECT` (from `.env` or the
+  environment), else `SHINOBI_PUBLIC_URL` when it is https, else the project
+  URL. The old default, which earlier versions wrote into `.env`, is ignored,
+  so existing installs heal on upgrade. Subscriptions keep working: the keys
+  do not change.
+- **Push errors say why.** A failed send now records the status and the push
+  service's reason (e.g. `403 BadJwtToken`) instead of web-push's bare
+  "Received unexpected response code". It shows on the Push page under each
+  device and in the log.
+- The "generated VAPID keypair" log line names the real `.env` path (e.g.
+  `/data/.env` in Docker).
+
 ## [0.7.1] — 2026-11-21
 
 The iPhone home-screen app is usable: the menu no longer hides under the status bar.
