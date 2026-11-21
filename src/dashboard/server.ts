@@ -39,6 +39,7 @@ import { listLinksForProject } from '../models/pr_links.js';
 import { detectAvailableProvider } from '../services/embedding/detect.js';
 import { listLoadedPlugins } from '../services/plugins/state.js';
 import { listPluginPages, renderPluginPage, runPluginPageAction } from '../services/plugins/pages.js';
+import { registerOAuthRoutes } from './oauth.js';
 import {
   installPackage,
   listInstalled,
@@ -175,8 +176,17 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
     app.use('/mcp', mcpRateLimiter().middleware);
   }
 
+  // OAuth for the remote /mcp endpoint: only meaningful when auth is on and
+  // /mcp is served. Opt out with SHINOBI_OAUTH=off.
+  const oauthEnv = (process.env['SHINOBI_OAUTH'] ?? '').toLowerCase();
+  const oauth = Boolean(opts?.mcp && auth?.enabled && auth.token && !['off', 'false', '0'].includes(oauthEnv));
+
   if (auth?.enabled) {
-    app.use('*', createAuthMiddleware(auth));
+    app.use('*', createAuthMiddleware({ ...auth, oauth }));
+  }
+
+  if (oauth && auth?.token) {
+    registerOAuthRoutes(app, { dashboardToken: auth.token });
   }
 
   if (opts?.mcp) {

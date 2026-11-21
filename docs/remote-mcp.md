@@ -72,6 +72,24 @@ Same rules: non-loopback bind enables token auth; front with HTTPS.
 
 ## Connecting clients
 
+**Claude app / claude.ai (custom connector, OAuth):** Settings → Connectors →
+Add custom connector. Enter **only the URL** `https://shinobi.example.com/mcp`:
+no token, no headers, "No sign-in" not needed. Press **Connect**. The Shinobi
+consent page opens. Enter your dashboard token once (or just press Allow if
+you are signed in to the dashboard in that browser), and Claude receives its
+own short-lived access token with a rotating refresh token. The connector
+syncs to the phone app. Connected apps are listed in the dashboard under
+**Settings → Connected apps**, where each one can be revoked.
+
+Under the hood this follows the MCP authorization spec:
+- `/mcp` answers 401 with `WWW-Authenticate: Bearer resource_metadata=…`;
+- metadata lives at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`;
+- clients register dynamically at `/oauth/register`, then use authorization code + PKCE (S256) and refresh-token rotation (`/oauth/token`).
+
+Codes and tokens are stored only as SHA-256 hashes. OAuth tokens are accepted
+on `/mcp` only, never on the dashboard API. The dashboard token keeps working
+everywhere as before.
+
 **Claude Code (CLI / VS Code extension):**
 
 ```bash
@@ -116,6 +134,8 @@ ends as you go; call `session_closeout` before finishing.
 | `SHINOBI_DASHBOARD_AUTH` | auto | `on`/`off` override; auto = on for non-loopback binds |
 | `SHINOBI_CONFIG_DIR` | `~/.shinobi` | Database + config location (Docker image sets `/data`) |
 | `SHINOBI_DB_PATH` | `<config-dir>/shinobi.db` | Explicit database file override |
+| `SHINOBI_OAUTH` | on | `off` disables the OAuth endpoints (bearer token only) |
+| `SHINOBI_PUBLIC_URL` | from request | Public origin used in OAuth metadata, e.g. `https://shinobi.example.com` (normally derived from the tunnel's `X-Forwarded-*` headers) |
 
 ## FAQ
 
