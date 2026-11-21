@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-11-21
+
+The iPhone home-screen app is usable: the menu no longer hides under the status bar.
+
 ### Fixed
 
 - **iPhone home-screen app: the menu was hidden under the status bar.** The
