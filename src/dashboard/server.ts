@@ -176,6 +176,7 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
   const authLimiter = authRateLimiter();
   app.use('/api/auth/magic-link', authLimiter.middleware);
   app.use('/api/auth/verify', authLimiter.middleware);
+  app.use('/auth/signin', authLimiter.middleware);
   if (opts?.mcp) {
     app.use('/mcp', mcpRateLimiter().middleware);
   }
@@ -1253,7 +1254,7 @@ export async function startDashboard(options: StartDashboardOptions = {}): Promi
     const reason = isLoopbackHost(host) ? 'forced via env' : 'non-loopback bind';
     stdout.write(`shinobi dashboard: auth ON (${reason})\n`);
     stdout.write(`  token file: ${auth.tokenPath ?? dashboardTokenPath()}\n`);
-    stdout.write(`  open once:  http://${host}:${port}/?token=${auth.token}\n`);
+    stdout.write(`  sign in at: http://${host}:${port}/ with that token (it is never printed)\n`);
   } else {
     stdout.write(`shinobi dashboard: auth OFF (loopback bind, safe for local dev)\n`);
   }

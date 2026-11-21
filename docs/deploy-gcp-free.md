@@ -116,7 +116,7 @@ tunnels have no usage charges).
 
 Test from any device: `https://shinobi.yourdomain.com/health` → `{"ok":true}`.
 Opening `/` without a token shows the auth wall — that's the security
-working. Log in once with `https://shinobi.yourdomain.com/?token=YOUR_TOKEN`.
+working. Sign in once on that page with the token.
 
 > ⚠️ **Connecting from Claude Code web/cloud sessions?** Set Cloudflare →
 > SSL/TLS → Edge Certificates → **Minimum TLS Version to 1.2**. With a 1.3
