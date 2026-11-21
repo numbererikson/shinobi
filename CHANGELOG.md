@@ -38,6 +38,13 @@ Plugins that act on their own: schedules and push notifications.
 - Page buttons and notification buttons share one tool-ownership check
   (`services/plugins/invoke.ts`).
 
+### Fixed
+
+- **Signing in from an installed app (iPhone home screen).** The dashboard's
+  "unauthorized" page now has a token field and a Sign in button. A home-screen
+  app has no address bar for `?token=` and does not share Safari's cookies, so
+  before this there was no way to sign in to it.
+
 ## [0.6.0] — 2026-11-21
 
 Modules, and projects that close themselves.
