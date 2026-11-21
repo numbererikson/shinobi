@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   host rules apply as for buttons: own tools only, a valid argument name, and
   length capped (≤ 2000, default 500).
 
+
+### Tests
+
+- Tool-layer coverage: argument validation helpers; project lifecycle through
+  the MCP tools; `agent_bootstrap` task selection, claiming, ownership and
+  stale-summary detection; `session_closeout` completing tasks, logging dead
+  ends, creating follow-ups and persisting the agent summary as
+  `recent_summary`; `file_context` annotations; `recall` in fulltext mode.
 ## [0.4.1] — 2026-11-21
 
 ### Added
