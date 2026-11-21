@@ -40,8 +40,10 @@ export function publicBaseUrl(c: Context): string {
   return `${proto}://${host}`;
 }
 
-export function resourceMetadataUrl(c: Context): string {
-  return `${publicBaseUrl(c)}/.well-known/oauth-protected-resource`;
+/** Metadata URL for an MCP endpoint: `/mcp` keeps the plain URL, `/mcp/home` gets the RFC 9728 path suffix. */
+export function resourceMetadataUrl(c: Context, mcpPath = '/mcp'): string {
+  const suffix = mcpPath === '/mcp' ? '' : mcpPath;
+  return `${publicBaseUrl(c)}/.well-known/oauth-protected-resource${suffix}`;
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -175,8 +177,11 @@ export function registerOAuthRoutes(app: Hono, opts: { dashboardToken: string })
 
   const protectedResource = (c: Context) => {
     const base = publicBaseUrl(c);
+    // /.well-known/oauth-protected-resource/mcp/home describes /mcp/home; anything else /mcp.
+    const suffix = new URL(c.req.url).pathname.replace('/.well-known/oauth-protected-resource', '');
+    const resourcePath = suffix.startsWith('/mcp/') ? suffix : '/mcp';
     return c.json({
-      resource: `${base}/mcp`,
+      resource: `${base}${resourcePath}`,
       authorization_servers: [base],
       bearer_methods_supported: ['header'],
       resource_name: 'Shinobi',

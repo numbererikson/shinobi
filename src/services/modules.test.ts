@@ -9,6 +9,7 @@ import { recordPlugin, resetPluginState } from './plugins/state.js';
 import { registerPluginPage, listPluginPages, renderPluginPage, resetPluginPages } from './plugins/pages.js';
 import { appendTool, resetTools } from '../server/tools/registry.js';
 import { buildApp } from '../dashboard/server.js';
+import { visibleTools } from '../server/mcp.js';
 import {
   DEVELOPMENT,
   isModuleEnabled,
@@ -84,6 +85,14 @@ describe('modules', () => {
     expect((await post({ id: DEVELOPMENT })).status).toBe(400);
     const off = (await (await post({ id: 'user/shinobi-plugin-music', enabled: false })).json()) as { modules: { id: string; enabled: boolean }[] };
     expect(off.modules.find((m) => m.id === 'user/shinobi-plugin-music')?.enabled).toBe(false);
+    setModuleEnabled('user/shinobi-plugin-music', true);
+  });
+
+  it('/mcp/home leaves out Development; /mcp offers everything enabled', () => {
+    expect(visibleTools().map((t) => t.name).sort()).toEqual(['list_projects', 'plugin_music_play']);
+    expect(visibleTools({ excludeModules: [DEVELOPMENT] }).map((t) => t.name)).toEqual(['plugin_music_play']);
+    setModuleEnabled('user/shinobi-plugin-music', false);
+    expect(visibleTools({ excludeModules: [DEVELOPMENT] })).toEqual([]);
     setModuleEnabled('user/shinobi-plugin-music', true);
   });
 });

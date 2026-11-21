@@ -39,22 +39,31 @@ export async function initToolRuntime(): Promise<void> {
  * Transport-agnostic: callers connect it to stdio (startMcpServer) or to a
  * per-request streamable HTTP transport (server/http.ts).
  */
-export function buildMcpServer(info: ServerInfo = DEFAULT_INFO): Server {
-  const server = new Server(info, { capabilities: { tools: {} } });
+export interface McpServerOptions {
+  /** Modules whose tools this endpoint never offers (e.g. /mcp/home hides 'development'). */
+  excludeModules?: string[];
+}
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    // Tools of switched-off modules (Settings → Modules) are not offered.
-    const disabled = disabledModules();
-    return {
-      tools: allTools()
-        .filter((tool) => isToolEnabled(tool.name, disabled))
-        .map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema,
-        })),
-    };
-  });
+/** Tools an endpoint offers: enabled modules only, minus the endpoint's excluded modules. */
+export function visibleTools(opts: McpServerOptions = {}): ReturnType<typeof allTools> {
+  const disabled = disabledModules();
+  const excluded = new Set(opts.excludeModules ?? []);
+  return allTools().filter((tool) => isToolEnabled(tool.name, disabled) && !excluded.has(moduleOfTool(tool.name)));
+}
+
+export function buildMcpServer(info: ServerInfo = DEFAULT_INFO, opts: McpServerOptions = {}): Server {
+  const server = new Server(info, { capabilities: { tools: {} } });
+  const excluded = new Set(opts.excludeModules ?? []);
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    // Tools of switched-off modules (Settings → Modules) and of modules this
+    // endpoint excludes are not offered.
+    tools: visibleTools(opts).map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    })),
+  }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const toolName = request.params.name;
@@ -68,6 +77,12 @@ export function buildMcpServer(info: ServerInfo = DEFAULT_INFO): Server {
       };
     }
 
+    if (excluded.has(moduleOfTool(toolName))) {
+      return {
+        content: [{ type: 'text', text: `Tool ${toolName} is not available on this endpoint. Use /mcp for development tools.` }],
+        isError: true,
+      };
+    }
     if (!isToolEnabled(toolName)) {
       return {
         content: [{ type: 'text', text: `Tool ${toolName} belongs to module '${moduleOfTool(toolName)}', which is switched off (dashboard → Settings → Modules).` }],

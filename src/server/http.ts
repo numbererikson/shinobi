@@ -3,6 +3,7 @@ import type { Hono } from 'hono';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 
 import { buildMcpServer, type ServerInfo } from './mcp.js';
+import { DEVELOPMENT } from '../services/modules.js';
 
 /**
  * Mounts the MCP streamable HTTP endpoint at /mcp on an existing Hono app.
@@ -17,9 +18,23 @@ import { buildMcpServer, type ServerInfo } from './mcp.js';
  * middleware when it is enabled. MCP clients authenticate with
  * `Authorization: Bearer <token>` — the same token the dashboard uses.
  */
+/**
+ * MCP endpoints. `/mcp` offers every enabled module; `/mcp/home` leaves out the
+ * Development module (projects, tasks, decisions, …) so a phone chat only
+ * loads the home plugins it actually uses.
+ */
+export const MCP_ENDPOINTS: Array<{ path: string; excludeModules: string[] }> = [
+  { path: '/mcp', excludeModules: [] },
+  { path: '/mcp/home', excludeModules: [DEVELOPMENT] },
+];
+
 export function registerMcpRoutes(app: Hono, info?: ServerInfo): void {
-  app.post('/mcp', async (c) => {
-    const server = buildMcpServer(info);
+  for (const endpoint of MCP_ENDPOINTS) registerMcpEndpoint(app, endpoint.path, endpoint.excludeModules, info);
+}
+
+function registerMcpEndpoint(app: Hono, path: string, excludeModules: string[], info?: ServerInfo): void {
+  app.post(path, async (c) => {
+    const server = buildMcpServer(info, { excludeModules });
     const transport = new WebStandardStreamableHTTPServerTransport({
       // No sessionIdGenerator → stateless mode.
       enableJsonResponse: true,
@@ -37,7 +52,7 @@ export function registerMcpRoutes(app: Hono, info?: ServerInfo): void {
 
   // Stateless server: there is no SSE stream to resume and no session to
   // delete. Respond with a JSON-RPC error per the streamable HTTP spec.
-  app.on(['GET', 'DELETE'], '/mcp', (c) =>
+  app.on(['GET', 'DELETE'], path, (c) =>
     c.json(
       {
         jsonrpc: '2.0',
