@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`input` block for plugin pages.** A text field with a submit button. It
+  calls one of the plugin's own tools with the typed text as a named argument
+  (`{ ...args, [arg]: text }`), e.g. a "say this on the speaker" box. The same
+  host rules apply as for buttons: own tools only, a valid argument name, and
+  length capped (≤ 2000, default 500).
+
 ## [0.4.1] — 2026-11-21
 
 ### Added

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
@@ -65,16 +65,18 @@ export function PluginPage() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  async function press(button: PluginButton) {
-    if (button.confirm && !window.confirm(button.confirm)) return;
+  async function press(button: PluginButton): Promise<boolean> {
+    if (button.confirm && !window.confirm(button.confirm)) return false;
     const key = `${button.tool}:${button.label}`;
     setBusy(key);
     try {
       const r = await runPluginPageAction(pageId, button.tool, button.args);
       if (r.page) setPage(r.page);
       setToast(r.ok ? { kind: 'ok', text: `${button.label} ✓` } : { kind: 'err', text: r.error ?? 'failed' });
+      return r.ok;
     } catch (e) {
       setToast({ kind: 'err', text: e instanceof Error ? e.message : String(e) });
+      return false;
     } finally {
       setBusy(null);
     }
@@ -131,7 +133,7 @@ export function PluginPage() {
   );
 }
 
-function Block({ block, busy, onPress }: { block: PluginBlock; busy: string | null; onPress: (b: PluginButton) => void }) {
+function Block({ block, busy, onPress }: { block: PluginBlock; busy: string | null; onPress: (b: PluginButton) => Promise<boolean> }) {
   switch (block.type) {
     case 'heading':
       return <h2 className="text-sm uppercase tracking-wider text-text-muted pt-2">{block.text}</h2>;
@@ -225,16 +227,57 @@ function Block({ block, busy, onPress }: { block: PluginBlock; busy: string | nu
               key={i}
               variant={b.variant ?? 'default'}
               disabled={busy !== null}
-              onClick={() => onPress(b)}
+              onClick={() => void onPress(b)}
             >
               {busy === `${b.tool}:${b.label}` ? '…' : b.label}
             </Button>
           ))}
         </div>
       );
+    case 'input':
+      return <InputBlock block={block} busy={busy} onPress={onPress} />;
     case 'divider':
       return <hr className="border-border" />;
     default:
       return null;
   }
 }
+
+function InputBlock({
+  block,
+  busy,
+  onPress,
+}: {
+  block: Extract<PluginBlock, { type: 'input' }>;
+  busy: string | null;
+  onPress: (b: PluginButton) => Promise<boolean>;
+}) {
+  const [value, setValue] = useState('');
+  const text = value.trim();
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!text) return;
+    const ok = await onPress({ label: block.button, tool: block.tool, args: { ...(block.args ?? {}), [block.arg]: text } });
+    if (ok) setValue('');
+  }
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-1">
+      {block.label && <label className="text-sm text-text-muted">{block.label}</label>}
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={block.placeholder}
+          maxLength={block.maxLength}
+          className="flex-1 min-w-0 bg-panel border border-border rounded px-3 py-1.5 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-accent"
+        />
+        <Button type="submit" variant="primary" disabled={busy !== null || !text}>
+          {busy === `${block.tool}:${block.button}` ? '…' : block.button}
+        </Button>
+      </div>
+    </form>
+  );
+}
+

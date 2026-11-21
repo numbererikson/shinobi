@@ -20,6 +20,7 @@ export type PluginBlock =
   | { type: 'list'; items: { title: string; subtitle?: string; badge?: string; tone?: Tone }[]; empty?: string }
   | { type: 'progress'; label: string; value: number; max: number; hint?: string }
   | { type: 'actions'; buttons: PluginButton[] }
+  | { type: 'input'; label?: string; placeholder?: string; button: string; tool: string; arg: string; args?: Record<string, unknown>; maxLength: number }
   | { type: 'divider' };
 
 export interface PluginButton {
@@ -70,6 +71,7 @@ const MAX_ROWS = 500;
 const MAX_ITEMS = 200;
 const MAX_TEXT = 2000;
 const TONES = new Set<Tone>(['default', 'muted', 'ok', 'warn', 'error']);
+const ARG_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,40}$/;
 
 interface RegisteredPage {
   plugin: string;
@@ -227,6 +229,25 @@ export function sanitizeBlocks(raw: unknown, plugin: string): PluginBlock[] {
       case 'actions': {
         const buttons = (Array.isArray(b.buttons) ? b.buttons : []).slice(0, 12).map((x) => sanitizeButton(x, plugin)).filter((x): x is PluginButton => x !== null);
         if (buttons.length) out.push({ type: 'actions', buttons });
+        break;
+      }
+      case 'input': {
+        // A text field + submit button: calls `tool` with { ...args, [arg]: <typed text> }.
+        if (typeof b.tool !== 'string' || !ownsTool(plugin, b.tool)) break;
+        if (typeof b.arg !== 'string' || !ARG_NAME.test(b.arg)) break;
+        const block: Extract<PluginBlock, { type: 'input' }> = {
+          type: 'input',
+          button: str(b.button, 40) || 'Send',
+          tool: b.tool,
+          arg: b.arg,
+          maxLength: Math.min(Math.max(Math.round(num(b.maxLength)) || 500, 1), MAX_TEXT),
+        };
+        const label = optStr(b.label, 120);
+        if (label) block.label = label;
+        const placeholder = optStr(b.placeholder, 120);
+        if (placeholder) block.placeholder = placeholder;
+        if (b.args && typeof b.args === 'object' && !Array.isArray(b.args)) block.args = b.args as Record<string, unknown>;
+        out.push(block);
         break;
       }
       case 'divider':
