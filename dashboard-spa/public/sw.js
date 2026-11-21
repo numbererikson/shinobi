@@ -59,6 +59,15 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
+  // Plugin notification button: send back only its one-time token.
+  if (action && action.startsWith('plugin:')) {
+    const token = action.slice('plugin:'.length);
+    event.waitUntil(
+      fetch('/api/plugin-actions/' + encodeURIComponent(token), { method: 'POST' }).catch(() => undefined),
+    );
+    return;
+  }
+
   const url = data.url || '/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {

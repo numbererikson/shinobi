@@ -107,10 +107,16 @@ store lives in the `shinobi-plugin-example` repository.
 
 ### Testing a plugin in-process
 
-`createInProcessRegistry(pluginName)` (from `src/services/plugins/registry.ts`)
-gives you a registry that collects tools locally and exposes real, scoped
-`registry.state`, plus a `call(name, args)` helper — handy for unit tests and
-smoke harnesses without touching the global MCP tool registry.
+`createInProcessRegistry(pluginName, api?, { send? })` (from
+`src/services/plugins/registry.ts`) gives you a registry that collects tools,
+pages and schedules locally and exposes real, scoped `registry.state`, plus
+helpers — handy for unit tests and smoke harnesses without touching the global
+MCP tool registry:
+
+- `call(name, args)` runs a tool.
+- `runSchedule(id)` fires a schedule now.
+- `send` replaces web push delivery, so a test can capture what `notify` sent;
+  `runPushAction(token)` then presses one of its buttons by token.
 
 ## Dashboard pages (`registry.registerPage`)
 
@@ -178,12 +184,90 @@ Pages load in the same process that loads plugins: the Docker image, or
 auth. The in-process test registry (`createInProcessRegistry`) collects pages
 in a `pages` map, so a plugin's `render` can be unit-tested.
 
+## Scheduled jobs (`registry.schedule`)
+
+A plugin can run code on a cron schedule — a morning summary, a reminder check
+every minute, a nightly sync. Nothing needs to be asked of Claude for it to
+happen.
+
+```js
+export default function register(registry) {
+  if (typeof registry.schedule === 'function') {   // hosts older than 0.7.0 lack it
+    registry.schedule({
+      id: 'morning-brief',       // unique within the plugin: lowercase, digits, - and _
+      cron: '0 8 * * 1-5',       // minute hour day-of-month month day-of-week
+      timezone: 'Europe/Zagreb', // optional IANA zone; defaults to the host's
+      run: async (api) => {
+        const open = api.listSubtasks({ status: 'todo' }).length;
+        await registry.notify({ title: 'Good morning', body: `${open} open tasks` });
+      },
+    });
+  }
+}
+```
+
+The cron fields accept `*`, numbers, ranges `a-b`, steps `*/n` and `a-b/n`, and
+comma lists. Day-of-week is 0–7, where 0 and 7 are both Sunday. When both
+day-of-month and day-of-week are restricted, either one matching is enough.
+
+**Rules the host enforces:**
+- Schedules tick only in the long-lived process: the Docker image, or
+  `shinobi dashboard` with `SHINOBI_MCP_HTTP=on`. A stdio MCP session loads the
+  plugin and registers the schedule, but never runs it, so opening ten
+  sessions does not run a job ten times.
+- Each minute slot runs **at most once**: it is claimed in the database before
+  `run` starts, which also holds across a restart within the same minute.
+- Missed slots are not replayed. If the host was down at 08:00, the 08:00 run
+  is skipped. A job that must not miss anything (e.g. reminders) should tick
+  often and compare stored due times with "now" rather than rely on one slot.
+- `run` times out after 50 s. A throwing `run` is logged and recorded; it never
+  stops other schedules.
+- A Docker container runs in UTC unless you set `TZ`. Pass `timezone` so
+  `0 8 * * *` means 08:00 where you are.
+
+## Push notifications (`registry.notify`)
+
+A plugin can push a notification to every device subscribed under **Push**.
+Up to two buttons can call the plugin's own tools when pressed — no need to
+open the dashboard.
+
+```js
+const result = await registry.notify({
+  title: 'Call the bank',
+  body: 'Reminder from 09:00',
+  url: '/apps/reminders',          // optional: opened when the notification is tapped
+  tag: 'reminder-17',              // optional: same tag replaces the previous one
+  actions: [                       // optional, at most 2
+    { label: 'Done', tool: 'plugin_reminders_done', args: { id: 17 } },
+    { label: 'Snooze 1h', tool: 'plugin_reminders_snooze', args: { id: 17, minutes: 60 } },
+  ],
+});
+// result: { total, succeeded, failed, pruned_endpoints, error }
+```
+
+**Rules the host enforces:**
+- A button may only call a tool registered by **the same plugin**; anything
+  else throws at `notify` time.
+- Each button carries an unguessable one-time token. The device sends back
+  only the token (`POST /api/plugin-actions/:token`, behind dashboard auth),
+  and the server runs the mapped tool with its stored `args`.
+- Pressing one button retires every button of that notification, so "Done"
+  and "Snooze" on one reminder can never both run. Buttons expire after 7 days.
+- `title` is capped at 120 characters, `body` at 1000, button labels at 40.
+  `url` must be a same-origin path starting with `/`.
+- Delivery failures never throw; they are reported in `result`. Invalid input
+  throws.
+- `notify` works from any process — a tool handler in a stdio session or a
+  schedule in the dashboard.
+
 ## Modules
 
 Every plugin is a module that the owner can switch off under **Settings →
 Modules**. When it is off, the plugin's tools are left out of `tools/list` and
-calls to them fail with a clear message, and its pages leave the sidebar. The
-plugin is still loaded and its `registry.state` is kept. A plugin needs no
+calls to them fail with a clear message, and its pages leave the sidebar. Its
+schedules stop firing, `notify` sends nothing (`result.error` is
+`'module disabled'`), and buttons on notifications it already sent are refused.
+The plugin is still loaded and its `registry.state` is kept. A plugin needs no
 code for this.
 
 ## Async handlers

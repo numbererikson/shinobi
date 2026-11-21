@@ -1,6 +1,6 @@
-import { getTool } from '../../server/tools/registry.js';
 import { findPlugin } from './state.js';
 import { isModuleEnabled } from '../modules.js';
+import { resolveOwnedTool, withTimeout } from './invoke.js';
 
 /**
  * Plugin dashboard pages.
@@ -263,16 +263,7 @@ export function sanitizeBlocks(raw: unknown, plugin: string): PluginBlock[] {
 }
 
 function ownsTool(plugin: string, tool: string): boolean {
-  const info = findPlugin(plugin);
-  return Boolean(info?.tools_registered.includes(tool) && getTool(tool));
-}
-
-function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${what} timed out after ${ms / 1000}s`)), ms);
-  });
-  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+  return resolveOwnedTool(plugin, tool) !== null;
 }
 
 // ---- render & actions ---------------------------------------------------------
@@ -306,14 +297,14 @@ export type PageActionResult =
 export async function runPluginPageAction(id: string, tool: string, args: Record<string, unknown>): Promise<PageActionResult> {
   const page = pages.get(id);
   if (!page || !isModuleEnabled(page.plugin)) return { status: 'not_found' };
-  if (!ownsTool(page.plugin, tool)) {
+  const handler = resolveOwnedTool(page.plugin, tool);
+  if (!handler) {
     return { status: 'forbidden', error: `tool '${tool}' does not belong to plugin '${page.plugin}'` };
   }
-  const def = getTool(tool)!;
   let result: unknown;
   let error: string | null = null;
   try {
-    result = await withTimeout(Promise.resolve().then(() => def.handler(args)), RENDER_TIMEOUT_MS, `tool '${tool}'`);
+    result = await withTimeout(Promise.resolve().then(() => handler(args)), RENDER_TIMEOUT_MS, `tool '${tool}'`);
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
   }

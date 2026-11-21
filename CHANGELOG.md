@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Plugin schedules — `registry.schedule({ id, cron, timezone?, run })`.**
+  Plugins can run code on a 5-field cron schedule, optionally in an IANA time
+  zone (the Docker container runs UTC).
+  - Schedules tick only in the long-lived dashboard process (Docker image, or
+    `shinobi dashboard` with `SHINOBI_MCP_HTTP=on`), never in stdio sessions.
+  - Each minute slot is claimed in the database before it runs, so it fires at
+    most once, even across a restart. Missed slots are not replayed.
+  - A switched-off module's schedules are skipped. Runs time out after 50 s.
+  - New `plugin_schedule_runs` table (migration `0016`), pruned after 7 days.
+- **Plugin push notifications — `registry.notify({ title, body, url?, tag?, actions? })`.**
+  Plugins can push to every subscribed device, with up to two buttons that
+  call the plugin's own tools.
+  - Each button is an unguessable one-time token; the service worker sends
+    only the token to the new `POST /api/plugin-actions/:token`.
+  - Pressing one button retires its siblings. Buttons expire after 7 days.
+  - New `plugin_push_actions` table (migration `0017`).
+- `createInProcessRegistry` gains `schedules`, `runSchedule(id)`,
+  `runPushAction(token)` and a `send` option for capturing notifications in
+  tests.
+
+### Changed
+
+- Page buttons and notification buttons share one tool-ownership check
+  (`services/plugins/invoke.ts`).
+
 ## [0.6.0] — 2026-11-21
 
 Modules, and projects that close themselves.
