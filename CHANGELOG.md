@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-21
+
+One-click Connect for the Claude app, text input on plugin pages, more tests.
+
 ### Added
 
 - **OAuth for the remote `/mcp` endpoint (one-click "Connect" in the Claude
