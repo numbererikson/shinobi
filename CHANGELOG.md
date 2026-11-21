@@ -13,12 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - settings come from `shinobi.env`;
   - the `shinobi-data` volume has a fixed name, so existing `docker run`
     installs keep their data;
-  - a health check is included, and `/mcp` is bound to `127.0.0.1`;
+  - a health check is included, and the port is bound to `127.0.0.1`;
   - upgrade with `docker compose pull && docker compose up -d`;
   - an optional nightly auto-upgrade cron line is in `docs/remote-mcp.md`.
-
-### Added
-
 - **`/mcp/home` endpoint.** It is the same server without the Development
   module, so the Claude app and phone chats load only the home plugins (music,
   AdGuard, reminders, …) instead of ~85 tools. `/mcp` is unchanged. OAuth
