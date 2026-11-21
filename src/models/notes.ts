@@ -59,6 +59,12 @@ export function addNote(input: AddNoteInput): Note {
   return created;
 }
 
+/** Permanently delete a note. The FTS index row goes with it (trigger). */
+export function deleteNote(id: number): boolean {
+  const r = getDb().prepare('DELETE FROM notes WHERE id = ?').run(id);
+  return r.changes > 0;
+}
+
 export function getNote(id: number): Note | null {
   const row = getDb()
     .prepare<[number], NoteRow>('SELECT * FROM notes WHERE id = ?')

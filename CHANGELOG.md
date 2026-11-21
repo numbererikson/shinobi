@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-11-21
+
+### Added
+
+- **`delete_note` tool.** Notes could be added and listed but not removed.
+  `delete_note` permanently deletes one, and its full-text index entry with it.
+  It records a `delete_note` activity and returns the deleted note, so a
+  mistake can be re-added. The tool count is now 40.
+
 ## [0.4.0] — 2026-11-21
 
 Plugins get their own dashboard pages.
