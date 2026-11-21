@@ -293,11 +293,7 @@ See [docs/architecture.md](docs/architecture.md) for the request lifecycle and m
 
 The dashboard is open on loopback binds (`127.0.0.1`, `localhost`, `::1`) and token-protected on any non-loopback bind. The token is read from `SHINOBI_DASHBOARD_TOKEN`, otherwise loaded from `~/.shinobi/dashboard-token`, otherwise auto-generated and persisted there. `/health` is always open for probes.
 
-Browser flow — open the dashboard with the token once and the cookie sticks:
-
-```text
-http://192.168.1.10:8765/?token=YOUR_TOKEN
-```
+Browser flow: open the dashboard and enter the token on the sign-in page once per device (30-day cookie). Tokens are never accepted in the URL.
 
 Curl / scripts — any of these works:
 

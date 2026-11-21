@@ -24,12 +24,14 @@ When the dashboard binds to a non-loopback host, every route except `GET /health
 
 1. `Authorization: Bearer <token>` header
 2. `X-Shinobi-Token: <token>` header
-3. `shinobi_token` cookie (set automatically after a successful `?token=` query)
-4. `?token=<token>` query string — used once, the response sets the cookie
+3. `shinobi_token` cookie (HttpOnly, 30 days), set by the sign-in form (`POST /auth/signin`)
+
+Tokens are never accepted in the URL (`?token=`): a URL ends up in browser
+history and in proxy and tunnel logs.
 
 Loopback binds skip the middleware entirely so local development stays zero-friction. The token file is created with `0600` permissions on POSIX systems.
 
-Without a credential, a browser gets a sign-in page with a token field. An app installed to a phone's home screen needs it: it has no address bar for `?token=` and does not share the browser's cookies. The sign-in lasts 30 days.
+Without a credential, a browser gets a sign-in page with a token field. It posts the token, never puts it in the URL, and returns you to the page you opened. The sign-in lasts 30 days per device, including a home-screen app, which keeps its own cookies. Startup logs print where the token file is, never the token itself.
 
 ## Push notifications
 

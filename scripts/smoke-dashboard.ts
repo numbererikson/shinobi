@@ -176,7 +176,7 @@ const authExpectations: Array<[string, Response]> = [
   ['GET /health bypasses auth → 200', await authApp.fetch(new Request('http://localhost/health'))],
   ['GET / without auth → 401', await authApp.fetch(new Request('http://localhost/'))],
   ['GET / with wrong token → 401', await authApp.fetch(new Request('http://localhost/?token=wrong'))],
-  [`GET /?token=VALID → 200`, await authApp.fetch(new Request(`http://localhost/?token=${AUTH_TOKEN}`))],
+  [`GET /?token=VALID → 401 (no tokens in URLs)`, await authApp.fetch(new Request(`http://localhost/?token=${AUTH_TOKEN}`))],
   ['GET / Bearer header → 200', await authApp.fetch(new Request('http://localhost/', { headers: { Authorization: `Bearer ${AUTH_TOKEN}` } }))],
   ['GET / X-Shinobi-Token header → 200', await authApp.fetch(new Request('http://localhost/', { headers: { 'X-Shinobi-Token': AUTH_TOKEN } }))],
   ['GET / cookie → 200', await authApp.fetch(new Request('http://localhost/', { headers: { Cookie: `shinobi_token=${AUTH_TOKEN}` } }))],
@@ -188,15 +188,21 @@ for (const [label, res] of authExpectations) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}  actual=${res.status}`);
   if (ok) authPass++;
 }
-const queryRes = await authApp.fetch(new Request(`http://localhost/?token=${AUTH_TOKEN}`));
-const setCookie = queryRes.headers.get('set-cookie') ?? '';
-const cookieOk = setCookie.includes('shinobi_token=');
-console.log(`${cookieOk ? 'PASS' : 'FAIL'}  ?token= promotes to cookie  set-cookie="${setCookie.slice(0, 80)}…"`);
+const signin = await authApp.fetch(
+  new Request('http://localhost/auth/signin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ token: AUTH_TOKEN, next: '/push' }).toString(),
+  }),
+);
+const setCookie = signin.headers.get('set-cookie') ?? '';
+const cookieOk = signin.status === 303 && signin.headers.get('location') === '/push' && setCookie.includes('shinobi_token=') && setCookie.includes('HttpOnly');
+console.log(`${cookieOk ? 'PASS' : 'FAIL'}  POST /auth/signin sets the cookie and returns to the page  status=${signin.status}`);
 if (cookieOk) authPass++;
 
 // An installed PWA has no address bar: the 401 page must offer a sign-in form.
 const loginPage = await (await authApp.fetch(new Request('http://localhost/push', { headers: { Accept: 'text/html' } }))).text();
-const formOk = loginPage.includes('<form method="get" action="/push"') && loginPage.includes('name="token"');
+const formOk = loginPage.includes('<form method="post" action="/auth/signin"') && loginPage.includes('name="next" value="/push"') && loginPage.includes('name="token"');
 console.log(`${formOk ? 'PASS' : 'FAIL'}  401 HTML page offers a sign-in form`);
 if (formOk) authPass++;
 

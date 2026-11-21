@@ -15,7 +15,7 @@ laptop:
 Both paths require **dashboard auth enabled**. The dashboard auto-enables auth
 whenever it binds to anything other than a loopback address (`127.0.0.1`,
 `localhost`, `::1`). If you change the bind host, also do a one-time
-`shinobi dashboard` run to capture the printed `?token=...` URL.
+`shinobi dashboard` run and read the token from the printed token file.
 
 ---
 
@@ -83,19 +83,14 @@ The startup log now reads:
 shinobi dashboard: listening on http://0.0.0.0:8765
 shinobi dashboard: auth ON (non-loopback bind)
   token file: /home/you/.shinobi/dashboard-token
-  open once:  http://0.0.0.0:8765/?token=<random-64-chars>
+  sign in at: http://0.0.0.0:8765/ with that token (it is never printed)
 ```
 
 ### 4. Open from the phone
 
-In your phone browser, visit:
-
-```
-http://100.101.102.103:8765/?token=<token from the log>
-```
-
-Once opened, the token is stored as a cookie and you do not need to paste it
-again on that device.
+In your phone browser, open `http://100.101.102.103:8765/` and enter the token
+(from the token file) on the sign-in page. A 30-day cookie keeps you signed in
+on that device.
 
 ### 5. Save to home screen (PWA install)
 
@@ -105,8 +100,7 @@ Screen. On Android: ⋮ → Install app.
 
 An installed app keeps its own cookies (on iOS it does not share Safari's), so
 the first launch shows a **sign-in page**: enter the dashboard token once. The
-sign-in lasts 30 days. Shinobi 0.7.0 and newer have this page; on older
-versions the installed app has no way to add `?token=`.
+sign-in lasts 30 days.
 
 This also enables push notifications: ☰ → **Development → Push → Subscribe this
 device**, then **Test push**. On iOS (16.4+) push works only from the installed
@@ -174,10 +168,9 @@ SHINOBI_DASHBOARD_AUTH=on
 ```
 
 Restart the dashboard. The first non-`/health` request without a valid
-`?token=`, `Authorization: Bearer`, `x-shinobi-token`, or cookie is rejected
-with `401`. Visit the public tunnel URL once with `?token=<value>` appended;
-the dashboard sets a 30-day cookie and you do not need to paste it again on
-that device.
+`Authorization: Bearer`, `x-shinobi-token` or sign-in cookie is rejected with
+`401`; a browser gets the sign-in page. Sign in once per device: the dashboard
+sets a 30-day cookie.
 
 You can read the generated token from `~/.shinobi/dashboard-token` at any
 time. Rotate it by deleting that file (next start regenerates) or by setting
