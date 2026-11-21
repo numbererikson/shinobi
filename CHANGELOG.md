@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   works on both endpoints, and `/mcp/home` has its own path-suffixed resource
   metadata.
 
+### Security
+
+- **No tokens in URLs.** `?token=` is no longer accepted anywhere, neither on
+  the dashboard nor on `/mcp`, because a URL ends up in browser history and in
+  proxy and tunnel logs.
+  - Browsers sign in through a POST form (`/auth/signin`, rate-limited). It
+    sets an HttpOnly cookie (Secure over HTTPS) for 30 days and returns to
+    the page you opened.
+  - MCP clients use OAuth (Claude app) or `Authorization: Bearer` (Claude Code).
+  - Startup logs no longer print the token.
+
 ## [0.7.2] — 2026-11-21
 
 Push notifications reach iPhones, and a failed push tells you why.
