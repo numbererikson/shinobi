@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-11-21
+
+Plugins get their own dashboard pages.
+
+### Added
+
+- **Plugin dashboard pages (`registry.registerPage`).** A plugin can add a page
+  to the sidebar under **Apps** (`/apps/<id>`). The page is described as data:
+  `render()` returns blocks (heading, text, stats, table, list, progress,
+  actions, divider) and the dashboard draws them, with optional auto-refresh.
+  Buttons call the plugin's own tools and re-render the page. The host
+  sanitises every block, keeps text plain and capped, drops buttons aimed at
+  core or other plugins' tools, and times out `render` and actions after 10 s.
+  New endpoints: `GET /api/plugin-pages`, `GET /api/plugin-pages/:id`,
+  `POST /api/plugin-pages/:id/action`. `PluginInfo` gains `pages_registered`.
+  See `docs/plugin-development.md` → *Dashboard pages*.
+
 ## [0.3.2] — 2026-11-10
 
 Stateful plugins and safer restores. Ships the fixes merged since 0.3.1 in a

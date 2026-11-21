@@ -21,6 +21,7 @@ import { Approvals } from './pages/Approvals';
 import { Push } from './pages/Push';
 import { Relay } from './pages/Relay';
 import { Plugins } from './pages/Plugins';
+import { PluginPage } from './pages/PluginPage';
 import { Telemetry } from './pages/Telemetry';
 import { NotFound } from './pages/NotFound';
 
@@ -36,6 +37,7 @@ export function App() {
           <Route path="/push" element={<Push />} />
           <Route path="/relay" element={<Relay />} />
           <Route path="/plugins" element={<Plugins />} />
+          <Route path="/apps/:pageId" element={<PluginPage />} />
           <Route path="/telemetry" element={<Telemetry />} />
           <Route path="/sessions" element={<AllSessions />} />
           <Route path="/sessions/:sessionId" element={<SessionDetail />} />

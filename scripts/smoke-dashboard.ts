@@ -125,6 +125,8 @@ const routes = [
   `/projects/${project.id}/analytics`,
   `/sessions/${encodeURIComponent(sessionId)}`,
   `/api/projects/${project.id}/snapshot`,
+  '/api/plugin-pages',
+  '/apps/some-plugin-page',
 ];
 
 let pass = 0;

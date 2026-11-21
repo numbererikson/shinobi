@@ -3,6 +3,8 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { Activity, Archive, Bell, CheckSquare, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
 import { WorkspaceBadge } from './WorkspaceBadge';
+import { PluginIcon } from './PluginIcon';
+import { listPluginPages, type PluginPageSummary } from '../lib/api';
 import { SyncPanel } from './SyncPanel';
 import type { Project } from '../lib/types';
 
@@ -24,6 +26,21 @@ export function Sidebar({ projects }: SidebarProps) {
     if (!byWorkspace.has(ws)) byWorkspace.set(ws, []);
     byWorkspace.get(ws)!.push(p);
   }
+
+  const [apps, setApps] = useState<PluginPageSummary[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    listPluginPages()
+      .then((r) => {
+        if (!cancelled) setApps(r.pages);
+      })
+      .catch(() => {
+        /* older server without plugin pages: no Apps section */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [isMac, setIsMac] = useState(false);
   useEffect(() => {
@@ -137,6 +154,27 @@ export function Sidebar({ projects }: SidebarProps) {
           </Link>
         </li>
       </ul>
+
+      {apps.length > 0 && (
+        <>
+          <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">Apps</div>
+          <ul className="mb-4">
+            {apps.map((a) => (
+              <li key={a.id}>
+                <Link
+                  to={`/apps/${a.id}`}
+                  className={clsx(
+                    'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
+                    location.pathname === `/apps/${a.id}` ? 'bg-border text-text' : 'text-text hover:bg-panel'
+                  )}
+                >
+                  <PluginIcon name={a.icon} className="w-3.5 h-3.5" /> {a.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">Projects</div>
       {byWorkspace.size === 0 ? (

@@ -38,6 +38,7 @@ import { handleWebhook } from '../services/github/webhook.js';
 import { listLinksForProject } from '../models/pr_links.js';
 import { detectAvailableProvider } from '../services/embedding/detect.js';
 import { listLoadedPlugins } from '../services/plugins/state.js';
+import { listPluginPages, renderPluginPage, runPluginPageAction } from '../services/plugins/pages.js';
 import {
   installPackage,
   listInstalled,
@@ -771,6 +772,38 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
       installed: listInstalled(),
       install_prefix: pluginsNpmDir(),
     });
+  });
+
+  // ---- Plugin pages (sidebar → Apps) ----
+
+  app.get('/api/plugin-pages', (c) => c.json({ pages: listPluginPages() }));
+
+  app.get('/api/plugin-pages/:id', async (c) => {
+    const page = await renderPluginPage(c.req.param('id'));
+    if (!page) return c.json({ error: 'page not found' }, 404);
+    return c.json(page);
+  });
+
+  app.post('/api/plugin-pages/:id/action', async (c) => {
+    let body: { tool?: unknown; args?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'invalid JSON body' }, 400);
+    }
+    if (typeof body.tool !== 'string') return c.json({ ok: false, error: 'tool required' }, 400);
+    const args = body.args && typeof body.args === 'object' && !Array.isArray(body.args) ? (body.args as Record<string, unknown>) : {};
+    const r = await runPluginPageAction(c.req.param('id'), body.tool, args);
+    switch (r.status) {
+      case 'not_found':
+        return c.json({ ok: false, error: 'page not found' }, 404);
+      case 'forbidden':
+        return c.json({ ok: false, error: r.error }, 403);
+      case 'failed':
+        return c.json({ ok: false, error: r.error, page: r.page });
+      default:
+        return c.json({ ok: true, result: r.result, page: r.page });
+    }
   });
 
   app.post('/api/plugins/search', async (c) => {
