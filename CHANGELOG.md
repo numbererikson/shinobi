@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **iPhone home-screen app: the menu was hidden under the status bar.** The
+  app runs full-screen under the status bar and notch
+  (`black-translucent` + `viewport-fit=cover`), but nothing reserved room for
+  it, so the mobile top bar with ☰ sat under the clock and could not be
+  tapped. The top bar, the slide-in menu and the page bottom now pad by the
+  safe-area insets.
+
+### Docs
+
+- `docs/remote-access.md`: signing in to an installed app, subscribing a
+  device to push, and the iOS limits (push only from the home-screen app, no
+  notification buttons).
+
 ## [0.7.0] — 2026-11-21
 
 Plugins that act on their own: schedules and push notifications.
