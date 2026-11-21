@@ -1,0 +1,35 @@
+# Shinobi with Docker Compose: the recommended way to run the image.
+#
+#   1. Put this file in a folder together with a `shinobi.env` (mode 600):
+#        SHINOBI_DASHBOARD_TOKEN=<openssl rand -hex 24>
+#        # plus any plugin settings (SHINOBI_ADGUARD_URL=…, TZ=Europe/Zagreb, …)
+#   2. docker compose up -d
+#
+# Upgrade:   docker compose pull && docker compose up -d
+# Logs:      docker compose logs --tail 50 shinobi   (the token is never printed)
+#
+# The database, installed plugins and keys live on the `shinobi-data` volume:
+# recreating or upgrading the container never touches them.
+services:
+  shinobi:
+    image: shinobiapps/shinobi:latest
+    container_name: shinobi
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8765:8765"   # this machine only; publish through a tunnel or reverse proxy
+    env_file:
+      - shinobi.env
+    volumes:
+      - shinobi-data:/data
+      # Music plugin: the host MPD socket directory (uncomment if you use it).
+      # - ${HOME}/.mpd:/mpd
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8765/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  shinobi-data:
+    name: shinobi-data   # fixed name: shared with older `docker run -v shinobi-data:/data` installs
