@@ -4,6 +4,7 @@ export interface PluginInfo {
   module_path: string;
   tools_registered: string[];
   pages_registered: string[];
+  schedules_registered: string[];
   error: string | null;
 }
 

@@ -145,6 +145,11 @@ const patchRes = await fetch(`http://127.0.0.1:38765/api/subtasks/${t2.id}`, {
 console.log(`PATCH /api/subtasks/${t2.id} → ${patchRes.status}`);
 if (patchRes.status === 200) pass++;
 
+// A push notification button with an unknown (or used/expired) token runs nothing.
+const actionRes = await fetch('http://127.0.0.1:38765/api/plugin-actions/not-a-real-token', { method: 'POST' });
+console.log(`${actionRes.status === 404 ? 'PASS' : 'FAIL'}  POST /api/plugin-actions/<unknown> → ${actionRes.status}`);
+if (actionRes.status === 404) pass++;
+
 // /sessions/:id returns the SPA shell HTML — data loads client-side via the JSON APIs below.
 const sessionDetail = await fetchOk(`/sessions/${encodeURIComponent(sessionId)}`);
 const snapshotBody = await (await fetch(`http://127.0.0.1:38765/api/projects/${project.id}/snapshot`)).text();
@@ -189,7 +194,7 @@ const cookieOk = setCookie.includes('shinobi_token=');
 console.log(`${cookieOk ? 'PASS' : 'FAIL'}  ?token= promotes to cookie  set-cookie="${setCookie.slice(0, 80)}…"`);
 if (cookieOk) authPass++;
 
-const totalExpected = routes.length + 1 + detailExpectations.length + authExpectations.length + 1;
+const totalExpected = routes.length + 2 + detailExpectations.length + authExpectations.length + 1;
 const totalActual = pass + detailChecks + authPass;
 console.log(`\n${totalActual}/${totalExpected} checks passed`);
 

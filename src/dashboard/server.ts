@@ -39,6 +39,8 @@ import { listLinksForProject } from '../models/pr_links.js';
 import { detectAvailableProvider } from '../services/embedding/detect.js';
 import { listLoadedPlugins } from '../services/plugins/state.js';
 import { listPluginPages, renderPluginPage, runPluginPageAction } from '../services/plugins/pages.js';
+import { runPluginPushAction } from '../services/plugins/notify.js';
+import { startPluginScheduler } from '../services/plugins/schedules.js';
 import { registerOAuthRoutes } from './oauth.js';
 import { DEVELOPMENT, knownModuleIds, listModules, moduleOfTool, setModuleEnabled } from '../services/modules.js';
 import { allTools } from '../server/tools/registry.js';
@@ -839,6 +841,22 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
     }
   });
 
+  // A button on a plugin push notification: the service worker sends only the
+  // one-time token; the server maps it to the plugin's own tool.
+  app.post('/api/plugin-actions/:token', async (c) => {
+    const r = await runPluginPushAction(c.req.param('token'));
+    switch (r.status) {
+      case 'not_found':
+        return c.json({ ok: false, error: 'action not found, used or expired' }, 404);
+      case 'forbidden':
+        return c.json({ ok: false, error: r.error }, 403);
+      case 'failed':
+        return c.json({ ok: false, error: r.error });
+      default:
+        return c.json({ ok: true, result: r.result });
+    }
+  });
+
   app.post('/api/plugins/search', async (c) => {
     let body: { query?: string } = {};
     try {
@@ -1255,6 +1273,12 @@ export async function startDashboard(options: StartDashboardOptions = {}): Promi
     startDigestScheduler();
   } catch (err) {
     stderr.write(`digest scheduler: start failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  }
+
+  // Plugin schedules tick only here — the one long-lived process that loads
+  // plugins. stdio MCP processes register schedules but never run them.
+  if (mcp) {
+    startPluginScheduler();
   }
 
   return server;

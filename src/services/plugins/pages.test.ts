@@ -13,7 +13,7 @@ import {
 
 function plugin(name: string, tools: Record<string, (args: Record<string, unknown>) => unknown> = {}): void {
   // Mirrors buildPluginRegistry: the plugin is recorded with the tools it owns.
-  recordPlugin({ name, source: 'user', module_path: `file:///${name}.mjs`, tools_registered: Object.keys(tools), pages_registered: [], error: null });
+  recordPlugin({ name, source: 'user', module_path: `file:///${name}.mjs`, tools_registered: Object.keys(tools), pages_registered: [], schedules_registered: [], error: null });
   for (const [tool, handler] of Object.entries(tools)) {
     appendTool({ name: tool, description: tool, inputSchema: { type: 'object' }, handler });
   }

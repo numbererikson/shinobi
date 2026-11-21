@@ -30,7 +30,7 @@ beforeAll(() => {
   resetPluginPages();
   appendTool({ name: 'list_projects', description: '', inputSchema: {}, handler: () => [] });
   appendTool({ name: 'plugin_music_play', description: '', inputSchema: {}, handler: () => 'ok' });
-  recordPlugin({ name: 'user/shinobi-plugin-music', source: 'user', module_path: 'file:///m.mjs', tools_registered: ['plugin_music_play'], pages_registered: [], error: null });
+  recordPlugin({ name: 'user/shinobi-plugin-music', source: 'user', module_path: 'file:///m.mjs', tools_registered: ['plugin_music_play'], pages_registered: [], schedules_registered: [], error: null });
   registerPluginPage('user/shinobi-plugin-music', { id: 'music', title: 'Music', render: () => [] });
 });
 

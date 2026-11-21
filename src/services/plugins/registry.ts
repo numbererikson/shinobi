@@ -6,10 +6,20 @@ import {
   setPluginState,
   updatePluginState,
 } from '../../models/plugin_state.js';
+import type { SafePushResult } from '../push/web-push.js';
 import { createApi, type ShinobiApi } from './api.js';
 import { discoverPlugins } from './discovery.js';
+import { resolveOwnedTool } from './invoke.js';
+import {
+  runPluginPushAction,
+  sendPluginNotification,
+  type PluginNotification,
+  type PushActionResult,
+  type PushSender,
+} from './notify.js';
 import { findPlugin, recordPlugin } from './state.js';
 import { registerPluginPage, type PluginPageDef } from './pages.js';
+import { registerPluginSchedule, validateScheduleDef, type PluginScheduleDef } from './schedules.js';
 
 const PLUGIN_TOOL_NAME = /^plugin_[a-z][a-z0-9_]*$/;
 
@@ -40,6 +50,18 @@ export interface PluginRegistry {
    * Plugins written for older hosts should check `typeof registry.registerPage`.
    */
   registerPage(def: PluginPageDef): void;
+  /**
+   * Run `def.run` on a cron schedule. Ticks only in the dashboard process; each
+   * slot runs at most once. Plugins written for older hosts should check
+   * `typeof registry.schedule`.
+   */
+  schedule(def: PluginScheduleDef): void;
+  /**
+   * Push a notification to every subscribed device. Up to two buttons, each
+   * calling one of this plugin's own tools when pressed. Never throws on
+   * delivery failure; invalid input throws.
+   */
+  notify(notification: PluginNotification): Promise<SafePushResult>;
   /** Durable, SQLite-backed state scoped to this plugin. */
   state: PluginStateStore;
 }
@@ -81,25 +103,43 @@ function buildPluginRegistry(pluginName: string, api: ShinobiApi): PluginRegistr
     registerPage(def) {
       registerPluginPage(pluginName, def);
     },
+    schedule(def) {
+      registerPluginSchedule(pluginName, def, api);
+    },
+    notify(notification) {
+      return sendPluginNotification(pluginName, notification, (tool) => resolveOwnedTool(pluginName, tool) !== null);
+    },
   };
+}
+
+export interface InProcessRegistryOptions {
+  /** Replaces web push delivery, e.g. to capture payloads in tests. */
+  send?: PushSender;
 }
 
 /**
  * In-process registry for tests and smoke harnesses. Unlike the discovery path
- * it collects tools locally (instead of mutating the global MCP tool registry),
- * validates names the same way, and exposes scoped, real SQLite-backed state.
+ * it collects tools, pages and schedules locally (instead of mutating the global
+ * registries), validates them the same way, and exposes scoped, real
+ * SQLite-backed state. `runSchedule` fires a schedule on demand and
+ * `runPushAction` presses a notification button by its token.
  */
 export function createInProcessRegistry(
   pluginName: string,
   api: ShinobiApi = createApi(),
+  options: InProcessRegistryOptions = {},
 ): {
   registry: PluginRegistry;
   tools: Map<string, PluginToolDef>;
   pages: Map<string, PluginPageDef>;
+  schedules: Map<string, PluginScheduleDef>;
   call: (name: string, args?: Record<string, unknown>) => Promise<unknown>;
+  runSchedule: (id: string) => Promise<unknown>;
+  runPushAction: (token: string) => Promise<PushActionResult>;
 } {
   const tools = new Map<string, PluginToolDef>();
   const pages = new Map<string, PluginPageDef>();
+  const schedules = new Map<string, PluginScheduleDef>();
   const registry: PluginRegistry = {
     state: scopedPluginState(pluginName),
     registerTool(def) {
@@ -117,13 +157,31 @@ export function createInProcessRegistry(
       if (pages.has(def.id)) throw new Error(`plugin '${pluginName}': duplicate page '${def.id}'`);
       pages.set(def.id, def);
     },
+    schedule(def) {
+      validateScheduleDef(pluginName, def);
+      if (schedules.has(def.id)) throw new Error(`plugin '${pluginName}': duplicate schedule '${def.id}'`);
+      schedules.set(def.id, def);
+    },
+    notify(notification) {
+      return sendPluginNotification(pluginName, notification, (tool) => tools.has(tool), options.send);
+    },
   };
   const call = async (name: string, args: Record<string, unknown> = {}): Promise<unknown> => {
     const def = tools.get(name);
     if (!def) throw new Error(`no tool '${name}'`);
     return await def.handler(args, api);
   };
-  return { registry, tools, pages, call };
+  const runSchedule = async (id: string): Promise<unknown> => {
+    const def = schedules.get(id);
+    if (!def) throw new Error(`no schedule '${id}'`);
+    return await def.run(api);
+  };
+  const runPushAction = (token: string): Promise<PushActionResult> =>
+    runPluginPushAction(token, (plugin, tool) => {
+      const def = plugin === pluginName ? tools.get(tool) : undefined;
+      return def ? (args) => def.handler(args, api) : null;
+    });
+  return { registry, tools, pages, schedules, call, runSchedule, runPushAction };
 }
 
 export async function loadDiscoveredPlugins(): Promise<void> {
@@ -137,6 +195,7 @@ export async function loadDiscoveredPlugins(): Promise<void> {
       module_path: candidate.module_path,
       tools_registered: [],
       pages_registered: [],
+      schedules_registered: [],
       error: null,
     });
 
