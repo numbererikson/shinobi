@@ -9,6 +9,7 @@ import {
 import { createApi, type ShinobiApi } from './api.js';
 import { discoverPlugins } from './discovery.js';
 import { findPlugin, recordPlugin } from './state.js';
+import { registerPluginPage, type PluginPageDef } from './pages.js';
 
 const PLUGIN_TOOL_NAME = /^plugin_[a-z][a-z0-9_]*$/;
 
@@ -33,6 +34,12 @@ export interface PluginStateStore {
 
 export interface PluginRegistry {
   registerTool(def: PluginToolDef): void;
+  /**
+   * Add a page to the dashboard (sidebar → Apps). The page is data: `render`
+   * returns blocks the dashboard draws; buttons call this plugin's own tools.
+   * Plugins written for older hosts should check `typeof registry.registerPage`.
+   */
+  registerPage(def: PluginPageDef): void;
   /** Durable, SQLite-backed state scoped to this plugin. */
   state: PluginStateStore;
 }
@@ -71,6 +78,9 @@ function buildPluginRegistry(pluginName: string, api: ShinobiApi): PluginRegistr
       const info = findPlugin(pluginName);
       if (info) info.tools_registered.push(def.name);
     },
+    registerPage(def) {
+      registerPluginPage(pluginName, def);
+    },
   };
 }
 
@@ -82,8 +92,14 @@ function buildPluginRegistry(pluginName: string, api: ShinobiApi): PluginRegistr
 export function createInProcessRegistry(
   pluginName: string,
   api: ShinobiApi = createApi(),
-): { registry: PluginRegistry; tools: Map<string, PluginToolDef>; call: (name: string, args?: Record<string, unknown>) => Promise<unknown> } {
+): {
+  registry: PluginRegistry;
+  tools: Map<string, PluginToolDef>;
+  pages: Map<string, PluginPageDef>;
+  call: (name: string, args?: Record<string, unknown>) => Promise<unknown>;
+} {
   const tools = new Map<string, PluginToolDef>();
+  const pages = new Map<string, PluginPageDef>();
   const registry: PluginRegistry = {
     state: scopedPluginState(pluginName),
     registerTool(def) {
@@ -97,13 +113,17 @@ export function createInProcessRegistry(
       }
       tools.set(def.name, def);
     },
+    registerPage(def) {
+      if (pages.has(def.id)) throw new Error(`plugin '${pluginName}': duplicate page '${def.id}'`);
+      pages.set(def.id, def);
+    },
   };
   const call = async (name: string, args: Record<string, unknown> = {}): Promise<unknown> => {
     const def = tools.get(name);
     if (!def) throw new Error(`no tool '${name}'`);
     return await def.handler(args, api);
   };
-  return { registry, tools, call };
+  return { registry, tools, pages, call };
 }
 
 export async function loadDiscoveredPlugins(): Promise<void> {
@@ -116,6 +136,7 @@ export async function loadDiscoveredPlugins(): Promise<void> {
       source: candidate.source,
       module_path: candidate.module_path,
       tools_registered: [],
+      pages_registered: [],
       error: null,
     });
 

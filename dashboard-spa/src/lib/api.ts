@@ -367,3 +367,60 @@ export function getRelayStatus(): Promise<RelayStatus> {
 export function relayBroadcastSync(): Promise<{ ok: boolean; error?: string }> {
   return jsonFetch('/api/relay/broadcast-sync', { method: 'POST', body: '{}' });
 }
+
+// ---- Plugin pages (sidebar → Apps) ----
+
+export type PluginTone = 'default' | 'muted' | 'ok' | 'warn' | 'error';
+
+export interface PluginButton {
+  label: string;
+  tool: string;
+  args?: Record<string, unknown>;
+  confirm?: string;
+  variant?: 'default' | 'primary' | 'danger';
+}
+
+export type PluginBlock =
+  | { type: 'heading'; text: string }
+  | { type: 'text'; text: string; tone?: PluginTone }
+  | { type: 'stats'; items: { label: string; value: string; hint?: string; tone?: PluginTone }[] }
+  | { type: 'table'; columns: string[]; rows: string[][]; empty?: string }
+  | { type: 'list'; items: { title: string; subtitle?: string; badge?: string; tone?: PluginTone }[]; empty?: string }
+  | { type: 'progress'; label: string; value: number; max: number; hint?: string }
+  | { type: 'actions'; buttons: PluginButton[] }
+  | { type: 'divider' };
+
+export interface PluginPageSummary {
+  id: string;
+  title: string;
+  icon: string;
+  plugin: string;
+}
+
+export interface PluginPage extends PluginPageSummary {
+  blocks: PluginBlock[];
+  refreshSeconds: number | null;
+  error: string | null;
+}
+
+export interface PluginActionResponse {
+  ok: boolean;
+  error?: string;
+  result?: unknown;
+  page?: PluginPage;
+}
+
+export function listPluginPages(): Promise<{ pages: PluginPageSummary[] }> {
+  return jsonFetch<{ pages: PluginPageSummary[] }>('/api/plugin-pages');
+}
+
+export function getPluginPage(id: string): Promise<PluginPage> {
+  return jsonFetch<PluginPage>(`/api/plugin-pages/${encodeURIComponent(id)}`);
+}
+
+export function runPluginPageAction(id: string, tool: string, args?: Record<string, unknown>): Promise<PluginActionResponse> {
+  return jsonFetch<PluginActionResponse>(`/api/plugin-pages/${encodeURIComponent(id)}/action`, {
+    method: 'POST',
+    body: JSON.stringify({ tool, args: args ?? {} }),
+  });
+}

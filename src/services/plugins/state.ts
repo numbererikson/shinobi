@@ -3,6 +3,7 @@ export interface PluginInfo {
   source: 'user' | 'npm';
   module_path: string;
   tools_registered: string[];
+  pages_registered: string[];
   error: string | null;
 }
 

@@ -112,6 +112,71 @@ gives you a registry that collects tools locally and exposes real, scoped
 `registry.state`, plus a `call(name, args)` helper — handy for unit tests and
 smoke harnesses without touching the global MCP tool registry.
 
+## Dashboard pages (`registry.registerPage`)
+
+A plugin can add a page to the dashboard. It shows up in the sidebar under
+**Apps**, at `/apps/<id>`. The page is **data, not code**: `render()` returns a
+list of blocks and the dashboard draws them. Plugins never ship UI code, so a
+page cannot run script in the dashboard, and a single-file plugin stays a
+single file.
+
+```js
+export default function register(registry) {
+  registry.registerTool({ name: 'plugin_music_control', /* … */ });
+
+  if (typeof registry.registerPage === 'function') {   // hosts older than 0.4.0 lack it
+    registry.registerPage({
+      id: 'music',            // /apps/music — lowercase, digits, dashes; unique across plugins
+      title: 'Music',
+      icon: 'music',          // music | shield | dumbbell | home | chart | list | package
+      order: 10,              // sidebar position (lower first), optional
+      render: async () => ({
+        refreshSeconds: 5,    // optional auto-refresh while the page is open (min 2)
+        blocks: [
+          { type: 'stats', items: [{ label: 'Now playing', value: 'Kashmir', hint: 'Led Zeppelin' }] },
+          { type: 'actions', buttons: [
+            { label: 'Next', tool: 'plugin_music_control', args: { action: 'next' }, variant: 'primary' },
+          ] },
+        ],
+      }),
+    });
+  }
+}
+```
+
+`render` may return the blocks array directly, or `{ blocks, refreshSeconds }`.
+
+| Block | Fields |
+| --- | --- |
+| `heading` | `text` |
+| `text` | `text`, `tone?` |
+| `stats` | `items: [{ label, value, hint?, tone? }]` |
+| `table` | `columns: string[]`, `rows: string[][]`, `empty?` |
+| `list` | `items: [{ title, subtitle?, badge?, tone? }]`, `empty?` |
+| `progress` | `label`, `value`, `max`, `hint?` |
+| `actions` | `buttons: [{ label, tool, args?, confirm?, variant? }]` |
+| `divider` | — |
+
+`tone` is one of `default`, `muted`, `ok`, `warn`, `error`. Button `variant`
+is `default`, `primary` or `danger`. A button with `confirm` asks first.
+
+**Rules the host enforces:**
+- Everything is plain text, with lengths and counts capped. Unknown block types
+  and malformed fields are dropped.
+- A button may only call a tool registered by **the same plugin**. Buttons
+  aimed at core tools or at other plugins' tools are removed. The action
+  endpoint refuses them too.
+- `render` and button tools time out after 10 s. A `render` that throws shows
+  its error message on the page instead of breaking the dashboard.
+- After a button press the page is re-rendered, so the new state shows at once.
+
+Pages load in the same process that loads plugins: the Docker image, or
+`shinobi dashboard` with `SHINOBI_MCP_HTTP=on`. The endpoints are
+`GET /api/plugin-pages`, `GET /api/plugin-pages/:id` and
+`POST /api/plugin-pages/:id/action` (`{ tool, args }`), all behind dashboard
+auth. The in-process test registry (`createInProcessRegistry`) collects pages
+in a `pages` map, so a plugin's `render` can be unit-tested.
+
 ## Async handlers
 
 Handlers may be async. Throw on invalid input; the MCP server catches and returns `isError: true` to the client.
