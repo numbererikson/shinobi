@@ -72,8 +72,19 @@ Same rules: non-loopback bind enables token auth; front with HTTPS.
 
 ## Connecting clients
 
+**Two endpoints:**
+
+| URL | Offers | Use it for |
+| --- | --- | --- |
+| `/mcp` | every enabled module (Development + plugins) | Claude Code, Cursor, … (coding) |
+| `/mcp/home` | every enabled module **except Development** | the Claude app / phone chat (music, AdGuard, reminders, …) |
+
+The phone chat then loads only the home tools, not the ~40 development
+tools, so it starts faster and stays focused. Both endpoints use the same
+auth, and OAuth tokens work on both.
+
 **Claude app / claude.ai (custom connector, OAuth):** Settings → Connectors →
-Add custom connector. Enter **only the URL** `https://shinobi.example.com/mcp`:
+Add custom connector. Enter **only the URL** `https://shinobi.example.com/mcp/home` (or `/mcp` if you also code from that chat):
 no token, no headers, "No sign-in" not needed. Press **Connect**. The Shinobi
 consent page opens. Enter your dashboard token once (or just press Allow if
 you are signed in to the dashboard in that browser), and Claude receives its

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`/mcp/home` endpoint.** It is the same server without the Development
+  module, so the Claude app and phone chats load only the home plugins (music,
+  AdGuard, reminders, …) instead of ~85 tools. `/mcp` is unchanged. OAuth
+  works on both endpoints, and `/mcp/home` has its own path-suffixed resource
+  metadata.
+
 ## [0.7.2] — 2026-11-21
 
 Push notifications reach iPhones, and a failed push tells you why.

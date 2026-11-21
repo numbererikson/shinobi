@@ -80,6 +80,14 @@ describe('discovery', () => {
     expect(res.headers.get('www-authenticate')).toBe(`Bearer resource_metadata="${BASE}/.well-known/oauth-protected-resource"`);
   });
 
+  it('/mcp/home points at its own path-suffixed resource metadata', async () => {
+    const res = await req('/mcp/home', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    expect(res.status).toBe(401);
+    expect(res.headers.get('www-authenticate')).toBe(`Bearer resource_metadata="${BASE}/.well-known/oauth-protected-resource/mcp/home"`);
+    const meta = (await (await req('/.well-known/oauth-protected-resource/mcp/home')).json()) as Record<string, unknown>;
+    expect(meta).toMatchObject({ resource: `${BASE}/mcp/home`, authorization_servers: [BASE] });
+  });
+
   it('serves protected-resource and authorization-server metadata without auth', async () => {
     const pr = (await (await req('/.well-known/oauth-protected-resource')).json()) as Record<string, unknown>;
     expect(pr).toMatchObject({ resource: `${BASE}/mcp`, authorization_servers: [BASE] });
@@ -148,6 +156,8 @@ describe('authorization code flow', () => {
     // GET /mcp is a 405 for authorised callers, so it proves the token passed auth.
     const mcp = await req('/mcp', { headers: { Authorization: `Bearer ${tokens.access_token}` } });
     expect(mcp.status).toBe(405);
+    const home = await req('/mcp/home', { headers: { Authorization: `Bearer ${tokens.access_token}` } });
+    expect(home.status).toBe(405);
     // OAuth tokens are for /mcp only, not the dashboard API.
     const api = await req('/api/projects', { headers: { Authorization: `Bearer ${tokens.access_token}` } });
     expect(api.status).toBe(401);
