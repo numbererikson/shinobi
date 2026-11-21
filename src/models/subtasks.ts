@@ -109,6 +109,7 @@ export function createSubtask(input: CreateSubtaskInput): Subtask {
     );
   const created = getSubtask(Number(result.lastInsertRowid));
   if (!created) throw new Error('createSubtask: lookup after insert returned null');
+  syncProjectStatus(created.project_id);
   return created;
 }
 
@@ -138,11 +139,13 @@ export function bulkCreateSubtasks(inputs: CreateSubtaskInput[]): Subtask[] {
     }
   });
   tx(inputs);
-  return ids.map((id) => {
+  const created = ids.map((id) => {
     const s = getSubtask(id);
     if (!s) throw new Error(`bulkCreateSubtasks: missing id ${id}`);
     return s;
   });
+  for (const projectId of new Set(created.map((t) => t.project_id))) syncProjectStatus(projectId);
+  return created;
 }
 
 export interface UpdateSubtaskInput {
@@ -208,16 +211,47 @@ export function updateSubtask(id: number, patch: UpdateSubtaskInput): Subtask | 
     params.push(UPDATABLE[k](val));
   }
   if (sets.length === 0) return getSubtask(id);
+  const before = getSubtask(id);
   params.push(id);
   getDb()
     .prepare(`UPDATE subtasks SET ${sets.join(', ')} WHERE id = ?`)
     .run(...params);
-  return getSubtask(id);
+  const after = getSubtask(id);
+  syncProjectStatus(before?.project_id);
+  if (after && after.project_id !== before?.project_id) syncProjectStatus(after.project_id);
+  return after;
 }
 
 export function deleteSubtask(id: number): boolean {
+  const before = getSubtask(id);
   const r = getDb().prepare('DELETE FROM subtasks WHERE id = ?').run(id);
+  if (r.changes > 0) syncProjectStatus(before?.project_id);
   return r.changes > 0;
+}
+
+/**
+ * Keep a project's status in step with its tasks: when every task is done the
+ * project closes itself (status 'done'); when a done project gets an open task
+ * again (new task, reopened, claimed) it goes back to 'in_progress'. Projects
+ * without tasks are left alone.
+ */
+export function syncProjectStatus(projectId: number | null | undefined): void {
+  if (projectId === null || projectId === undefined) return;
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT p.status AS status,
+              (SELECT COUNT(*) FROM subtasks WHERE project_id = p.id) AS total,
+              (SELECT COUNT(*) FROM subtasks WHERE project_id = p.id AND status = 'done') AS done
+       FROM projects p WHERE p.id = ?`,
+    )
+    .get(projectId) as { status: string; total: number; done: number } | undefined;
+  if (!row || row.total === 0) return;
+  if (row.done === row.total && row.status !== 'done') {
+    db.prepare(`UPDATE projects SET status = 'done' WHERE id = ?`).run(projectId);
+  } else if (row.done < row.total && row.status === 'done') {
+    db.prepare(`UPDATE projects SET status = 'in_progress' WHERE id = ?`).run(projectId);
+  }
 }
 
 export function claimSubtask(id: number, sessionId: string): Subtask | null {
@@ -227,7 +261,9 @@ export function claimSubtask(id: number, sessionId: string): Subtask | null {
        WHERE id = ?`,
     )
     .run(sessionId, id);
-  return getSubtask(id);
+  const claimed = getSubtask(id);
+  syncProjectStatus(claimed?.project_id);
+  return claimed;
 }
 
 export function setSubtaskAssignee(id: number, userId: number | null): Subtask | null {
@@ -252,7 +288,9 @@ export function claimNextTask(sessionId: string, options: NextTaskOptions = {}):
 
 export function completeSubtask(id: number): Subtask | null {
   getDb().prepare(`UPDATE subtasks SET status = 'done' WHERE id = ?`).run(id);
-  return getSubtask(id);
+  const done = getSubtask(id);
+  syncProjectStatus(done?.project_id);
+  return done;
 }
 
 export interface NextTaskOptions {

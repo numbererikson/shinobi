@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Projects close themselves.** When a project's last task is done, the
+  project switches to `done`. Adding, reopening or claiming a task switches it
+  back to `in_progress`. Projects without tasks are left alone. Migration
+  `0014` closes existing projects whose tasks are all done. The dashboard
+  folds finished projects into a collapsible **Done** section, so the main
+  list shows only open work.
+
 ## [0.5.0] — 2026-11-21
 
 One-click Connect for the Claude app, text input on plugin pages, more tests.
