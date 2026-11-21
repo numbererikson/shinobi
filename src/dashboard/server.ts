@@ -40,6 +40,8 @@ import { detectAvailableProvider } from '../services/embedding/detect.js';
 import { listLoadedPlugins } from '../services/plugins/state.js';
 import { listPluginPages, renderPluginPage, runPluginPageAction } from '../services/plugins/pages.js';
 import { registerOAuthRoutes } from './oauth.js';
+import { DEVELOPMENT, knownModuleIds, listModules, moduleOfTool, setModuleEnabled } from '../services/modules.js';
+import { allTools } from '../server/tools/registry.js';
 import {
   installPackage,
   listInstalled,
@@ -782,6 +784,27 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
       installed: listInstalled(),
       install_prefix: pluginsNpmDir(),
     });
+  });
+
+  // ---- Modules (Settings → Modules) ----
+
+  app.get('/api/modules', (c) =>
+    c.json({ modules: listModules(allTools().filter((t) => moduleOfTool(t.name) === DEVELOPMENT).length) }),
+  );
+
+  app.post('/api/modules/toggle', async (c) => {
+    let body: { id?: unknown; enabled?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'invalid JSON body' }, 400);
+    }
+    if (typeof body.id !== 'string' || typeof body.enabled !== 'boolean') {
+      return c.json({ ok: false, error: 'id (string) and enabled (boolean) required' }, 400);
+    }
+    if (!knownModuleIds().includes(body.id)) return c.json({ ok: false, error: 'unknown module' }, 404);
+    setModuleEnabled(body.id, body.enabled);
+    return c.json({ ok: true, modules: listModules(allTools().filter((t) => moduleOfTool(t.name) === DEVELOPMENT).length) });
   });
 
   // ---- Plugin pages (sidebar → Apps) ----

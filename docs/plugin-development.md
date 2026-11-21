@@ -178,6 +178,14 @@ Pages load in the same process that loads plugins: the Docker image, or
 auth. The in-process test registry (`createInProcessRegistry`) collects pages
 in a `pages` map, so a plugin's `render` can be unit-tested.
 
+## Modules
+
+Every plugin is a module that the owner can switch off under **Settings →
+Modules**. When it is off, the plugin's tools are left out of `tools/list` and
+calls to them fail with a clear message, and its pages leave the sidebar. The
+plugin is still loaded and its `registry.state` is kept. A plugin needs no
+code for this.
+
 ## Async handlers
 
 Handlers may be async. Throw on invalid input; the MCP server catches and returns `isError: true` to the client.

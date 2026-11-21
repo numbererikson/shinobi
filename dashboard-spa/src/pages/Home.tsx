@@ -5,6 +5,7 @@ import { WorkspaceBadge } from '../components/WorkspaceBadge';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { timeSince } from '../lib/format';
 import type { Project } from '../lib/types';
+import { useModules } from '../lib/modules';
 
 const WORKSPACE_FILTER_KEY = 'shinobi.home.workspaceFilter';
 const ALL_WORKSPACES = '__all__';
@@ -84,7 +85,7 @@ function ProjectsTable({ rows, dim = false }: { rows: Project[]; dim?: boolean }
   );
 }
 
-export function Home() {
+function ProjectsHome() {
   const { projects } = useOutletContext<OutletCtx>();
   const [showArchived, setShowArchived] = useState(false);
   const [showDone, setShowDone] = useState(false);
@@ -206,3 +207,32 @@ export function Home() {
     </div>
   );
 }
+
+/** "/" is the Development module's home; with Development off, point at the other modules. */
+export function Home() {
+  const { modules, developmentOn } = useModules();
+  if (developmentOn) return <ProjectsHome />;
+  const on = (modules ?? []).filter((m) => m.enabled && m.pages.length > 0);
+  return (
+    <div className="max-w-xl">
+      <h1 className="text-2xl text-text mb-4">Shinobi</h1>
+      <p className="text-text-muted text-sm mb-4">The Development module is switched off. Your modules:</p>
+      {on.length === 0 ? (
+        <p className="text-sm">
+          No module with a page is switched on. Turn one on in <Link to="/settings" className="text-accent">Settings → Modules</Link>.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {on.map((m) => (
+            <li key={m.id}>
+              <Link to={`/apps/${m.pages[0]}`} className="block bg-panel border border-border rounded px-4 py-3 hover:border-accent/60">
+                {m.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+

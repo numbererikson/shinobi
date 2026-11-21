@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Activity, Archive, Bell, CheckSquare, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
+import { Activity, Bell, CheckSquare, Code, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
 import { WorkspaceBadge } from './WorkspaceBadge';
 import { PluginIcon } from './PluginIcon';
 import { listPluginPages, type PluginPageSummary } from '../lib/api';
+import { useModules } from '../lib/modules';
 import { SyncPanel } from './SyncPanel';
 import type { Project } from '../lib/types';
 
@@ -12,33 +13,55 @@ interface SidebarProps {
   projects: Project[];
 }
 
+const SYSTEM_PATHS = ['/plugins', '/settings', '/telemetry'];
+
+function NavLink({ to, active, icon, children }: { to: string; active: boolean; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className={clsx(
+        'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
+        active ? 'bg-border text-text' : 'text-text hover:bg-panel',
+      )}
+    >
+      {icon}
+      <span className="min-w-0 truncate">{children}</span>
+    </Link>
+  );
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">{children}</div>;
+}
+
+/**
+ * Sidebar = one entry per module (Development + each plugin with a page),
+ * the selected module's own navigation underneath, and System at the bottom.
+ * Switched-off modules (Settings → Modules) do not appear.
+ */
 export function Sidebar({ projects }: SidebarProps) {
   const location = useLocation();
+  const path = location.pathname;
   const params = useParams<{ id?: string }>();
   const activeId = params.id ? Number(params.id) : null;
-
-  const active = projects.filter((p) => !p.archived_at);
-  const archived = projects.filter((p) => p.archived_at);
-
-  const byWorkspace = new Map<string, Project[]>();
-  for (const p of active) {
-    const ws = p.workspace ?? '(no workspace)';
-    if (!byWorkspace.has(ws)) byWorkspace.set(ws, []);
-    byWorkspace.get(ws)!.push(p);
-  }
+  const { developmentOn } = useModules();
 
   const [apps, setApps] = useState<PluginPageSummary[]>([]);
   useEffect(() => {
     let cancelled = false;
-    listPluginPages()
-      .then((r) => {
-        if (!cancelled) setApps(r.pages);
-      })
-      .catch(() => {
-        /* older server without plugin pages: no Apps section */
-      });
+    const load = () =>
+      listPluginPages()
+        .then((r) => {
+          if (!cancelled) setApps(r.pages);
+        })
+        .catch(() => {
+          /* older server without plugin pages */
+        });
+    void load();
+    window.addEventListener('shinobi:modules-changed', load);
     return () => {
       cancelled = true;
+      window.removeEventListener('shinobi:modules-changed', load);
     };
   }, []);
 
@@ -48,182 +71,123 @@ export function Sidebar({ projects }: SidebarProps) {
   }, []);
   const modKey = isMac ? '⌘' : 'Ctrl';
 
+  const inApps = path.startsWith('/apps/');
+  const inSystem = SYSTEM_PATHS.includes(path);
+  const inDevelopment = developmentOn && !inApps && !inSystem;
+
+  // Open projects only: finished ones live under Done on the projects page.
+  const open = projects.filter((p) => !p.archived_at && p.status !== 'done');
+  const byWorkspace = new Map<string, Project[]>();
+  for (const p of open) {
+    const ws = p.workspace ?? '(no workspace)';
+    if (!byWorkspace.has(ws)) byWorkspace.set(ws, []);
+    byWorkspace.get(ws)!.push(p);
+  }
+
   return (
-    <aside className="bg-panel-2 border-r border-border w-64 flex-shrink-0 overflow-y-auto scrollbar-thin p-4">
+    <aside className="bg-panel-2 border-r border-border w-64 flex-shrink-0 overflow-y-auto scrollbar-thin p-4 flex flex-col">
       <Link to="/" className="block text-lg font-bold tracking-wider mb-4 text-text">
         Shinobi 🥷
       </Link>
 
-      <button
-        onClick={() => window.dispatchEvent(new CustomEvent('cmd-palette:open'))}
-        className="w-full flex items-center gap-2 px-2 py-1.5 mb-4 rounded text-sm bg-panel border border-border text-text-muted hover:text-text hover:border-accent/60 transition-colors"
-      >
-        <Search className="w-3.5 h-3.5" />
-        <span className="flex-1 text-left">Search...</span>
-        <kbd className="text-[10px] border border-border rounded px-1 py-0.5">{modKey} K</kbd>
-      </button>
+      {developmentOn && (
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('cmd-palette:open'))}
+          className="w-full flex items-center gap-2 px-2 py-1.5 mb-4 rounded text-sm bg-panel border border-border text-text-muted hover:text-text hover:border-accent/60 transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="text-[10px] border border-border rounded px-1 py-0.5">{modKey} K</kbd>
+        </button>
+      )}
 
-      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">Workspace</div>
+      <SectionTitle>Modules</SectionTitle>
       <ul className="mb-4">
-        <li>
-          <Link
-            to="/sessions"
-            className={clsx(
-              'block px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/sessions' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            All sessions
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/voice"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/voice' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <Mic className="w-3.5 h-3.5" /> Voice capture
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/approvals"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/approvals' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <CheckSquare className="w-3.5 h-3.5" /> Approvals
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/push"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/push' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <Bell className="w-3.5 h-3.5" /> Push
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/relay"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/relay' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <Radio className="w-3.5 h-3.5" /> Relay
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/plugins"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/plugins' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <Package className="w-3.5 h-3.5" /> Plugins
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/telemetry"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/telemetry' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <Activity className="w-3.5 h-3.5" /> Telemetry
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings"
-            className={clsx(
-              'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-              location.pathname === '/settings' ? 'bg-border text-text' : 'text-text hover:bg-panel'
-            )}
-          >
-            <SettingsIcon className="w-3.5 h-3.5" /> Settings
-          </Link>
-        </li>
+        {developmentOn && (
+          <li>
+            <NavLink to="/" active={inDevelopment} icon={<Code className="w-3.5 h-3.5" />}>
+              Development
+            </NavLink>
+          </li>
+        )}
+        {apps.map((a) => (
+          <li key={a.id}>
+            <NavLink to={`/apps/${a.id}`} active={path === `/apps/${a.id}`} icon={<PluginIcon name={a.icon} className="w-3.5 h-3.5" />}>
+              {a.title}
+            </NavLink>
+          </li>
+        ))}
+        {!developmentOn && apps.length === 0 && (
+          <li className="px-2 py-1.5 text-sm text-text-muted italic">No modules switched on.</li>
+        )}
       </ul>
 
-      {apps.length > 0 && (
-        <>
-          <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">Apps</div>
+      {inDevelopment && (
+        <div className="border-l border-border ml-2 pl-3 mb-4">
           <ul className="mb-4">
-            {apps.map((a) => (
-              <li key={a.id}>
-                <Link
-                  to={`/apps/${a.id}`}
-                  className={clsx(
-                    'flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors',
-                    location.pathname === `/apps/${a.id}` ? 'bg-border text-text' : 'text-text hover:bg-panel'
-                  )}
-                >
-                  <PluginIcon name={a.icon} className="w-3.5 h-3.5" /> {a.title}
-                </Link>
-              </li>
-            ))}
+            <li>
+              <NavLink to="/sessions" active={path === '/sessions'}>All sessions</NavLink>
+            </li>
+            <li>
+              <NavLink to="/voice" active={path === '/voice'} icon={<Mic className="w-3.5 h-3.5" />}>Voice capture</NavLink>
+            </li>
+            <li>
+              <NavLink to="/approvals" active={path === '/approvals'} icon={<CheckSquare className="w-3.5 h-3.5" />}>Approvals</NavLink>
+            </li>
+            <li>
+              <NavLink to="/push" active={path === '/push'} icon={<Bell className="w-3.5 h-3.5" />}>Push</NavLink>
+            </li>
+            <li>
+              <NavLink to="/relay" active={path === '/relay'} icon={<Radio className="w-3.5 h-3.5" />}>Relay</NavLink>
+            </li>
           </ul>
-        </>
+
+          <SectionTitle>Projects</SectionTitle>
+          {byWorkspace.size === 0 ? (
+            <div className="text-text-muted text-sm italic">(no open projects)</div>
+          ) : (
+            [...byWorkspace.entries()].map(([ws, items]) => (
+              <div key={ws} className="mb-3">
+                <div className="flex items-center gap-1.5 mt-3 mb-1 text-[10px] uppercase tracking-wider text-text-muted">
+                  <WorkspaceBadge workspace={ws === '(no workspace)' ? null : ws} />
+                  <span>{items.length}</span>
+                </div>
+                <ul>
+                  {items.map((p) => (
+                    <li key={p.id}>
+                      <Link
+                        to={`/projects/${p.id}`}
+                        className={clsx(
+                          'block px-2 py-1.5 rounded text-sm transition-colors',
+                          activeId === p.id ? 'bg-border text-text' : 'text-text hover:bg-panel',
+                        )}
+                      >
+                        {p.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
       )}
 
-      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-2">Projects</div>
-      {byWorkspace.size === 0 ? (
-        <div className="text-text-muted text-sm italic">(none)</div>
-      ) : (
-        [...byWorkspace.entries()].map(([ws, items]) => (
-          <div key={ws} className="mb-3">
-            <div className="flex items-center gap-1.5 mt-3 mb-1 text-[10px] uppercase tracking-wider text-text-muted">
-              <WorkspaceBadge workspace={ws === '(no workspace)' ? null : ws} />
-              <span>{items.length}</span>
-            </div>
-            <ul>
-              {items.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    to={`/projects/${p.id}`}
-                    className={clsx(
-                      'block px-2 py-1.5 rounded text-sm transition-colors',
-                      activeId === p.id ? 'bg-border text-text' : 'text-text hover:bg-panel'
-                    )}
-                  >
-                    {p.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
-      )}
-
-      {archived.length > 0 && (
-        <>
-          <div className="text-[11px] uppercase tracking-wider text-text-muted mt-4 mb-2 flex items-center gap-1.5">
-            <Archive className="w-3 h-3" />
-            Archived
-          </div>
-          <ul>
-            {archived.map((p) => (
-              <li key={p.id}>
-                <Link to={`/projects/${p.id}`} className="block px-2 py-1.5 rounded text-sm text-text-dim hover:bg-panel">
-                  {p.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      <SyncPanel />
+      <div className="mt-auto pt-4">
+        <SectionTitle>System</SectionTitle>
+        <ul className="mb-2">
+          <li>
+            <NavLink to="/plugins" active={path === '/plugins'} icon={<Package className="w-3.5 h-3.5" />}>Plugins</NavLink>
+          </li>
+          <li>
+            <NavLink to="/settings" active={path === '/settings'} icon={<SettingsIcon className="w-3.5 h-3.5" />}>Settings &amp; modules</NavLink>
+          </li>
+          <li>
+            <NavLink to="/telemetry" active={path === '/telemetry'} icon={<Activity className="w-3.5 h-3.5" />}>Telemetry</NavLink>
+          </li>
+        </ul>
+        <SyncPanel />
+      </div>
     </aside>
   );
 }
