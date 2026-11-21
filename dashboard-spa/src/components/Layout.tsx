@@ -79,7 +79,9 @@ export function Layout() {
             className="md:hidden fixed inset-0 bg-black/50 z-40"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="md:hidden fixed inset-y-0 left-0 z-50 shadow-2xl">
+          {/* Safe-area padding: as a home-screen app on iPhone the page runs
+              under the status bar / notch (black-translucent + viewport-fit=cover). */}
+          <div className="md:hidden fixed inset-y-0 left-0 z-50 shadow-2xl flex bg-panel-2 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]">
             <Sidebar projects={projects} />
           </div>
         </>
@@ -87,7 +89,7 @@ export function Layout() {
 
       <main className="flex-1 overflow-y-auto min-w-0">
         {/* Mobile top bar with hamburger */}
-        <div className="md:hidden sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
+        <div className="md:hidden sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] flex items-center gap-3">
           <button
             onClick={() => setDrawerOpen((v) => !v)}
             className="text-text hover:text-accent"
@@ -97,7 +99,7 @@ export function Layout() {
           </button>
           <span className="text-text font-semibold tracking-wider">Shinobi 🥷</span>
         </div>
-        <div className="p-4 md:p-8">
+        <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-8">
           <Outlet context={{ projects }} />
         </div>
       </main>
