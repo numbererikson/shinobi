@@ -60,6 +60,13 @@ Optional nightly auto-upgrade (04:17), which skips the restart when nothing chan
 ( crontab -l 2>/dev/null; echo '17 4 * * * cd $HOME/shinobi-server && docker compose pull -q && docker compose up -d' ) | crontab -
 ```
 
+### Cloudflare Access (optional)
+
+To keep strangers from even reaching the sign-in page, put Cloudflare Access
+in front of the dashboard. You log in once per device per month, and `/mcp`
+and OAuth bypass it so Claude keeps working. See
+[cloudflare-access.md](cloudflare-access.md).
+
 ### Backups and alerts
 
 Keep a second copy of the brain off the machine. Once `shinobi sync` points
