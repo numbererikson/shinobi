@@ -69,6 +69,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Push moved to System in the sidebar.** Plugins such as Remember send push
+  notifications too, so the page stays reachable with Development switched off.
+
 - **Relay and Telemetry hide from the sidebar until they are used.** Relay
   shows once `SHINOBI_RELAY_URL` is set; Telemetry once it is on or has events.
 - **`docs/plugins.md` uses the current `register(registry, api)` API** and

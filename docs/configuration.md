@@ -35,7 +35,7 @@ Without a credential, a browser gets a sign-in page with a token field. It posts
 
 ## Push notifications
 
-Phones and browsers subscribe under **Development → Push** in the dashboard. On iPhone (iOS 16.4+) that only works from the app added to the home screen.
+Phones and browsers subscribe under **System → Push notifications** in the dashboard. On iPhone (iOS 16.4+) that only works from the app added to the home screen.
 
 | Variable | Default | Purpose |
 |---|---|---|

@@ -13,7 +13,7 @@ interface SidebarProps {
   projects: Project[];
 }
 
-const SYSTEM_PATHS = ['/plugins', '/settings', '/telemetry'];
+const SYSTEM_PATHS = ['/plugins', '/push', '/settings', '/telemetry'];
 
 function NavLink({ to, active, icon, children }: { to: string; active: boolean; icon?: ReactNode; children: ReactNode }) {
   return (
@@ -145,9 +145,6 @@ export function Sidebar({ projects }: SidebarProps) {
             <li>
               <NavLink to="/approvals" active={path === '/approvals'} icon={<CheckSquare className="w-3.5 h-3.5" />}>Approvals</NavLink>
             </li>
-            <li>
-              <NavLink to="/push" active={path === '/push'} icon={<Bell className="w-3.5 h-3.5" />}>Push</NavLink>
-            </li>
             {(relayOn || path === '/relay') && (
               <li>
                 <NavLink to="/relay" active={path === '/relay'} icon={<Radio className="w-3.5 h-3.5" />}>Relay</NavLink>
@@ -191,6 +188,9 @@ export function Sidebar({ projects }: SidebarProps) {
         <ul className="mb-2">
           <li>
             <NavLink to="/plugins" active={path === '/plugins'} icon={<Package className="w-3.5 h-3.5" />}>Plugins</NavLink>
+          </li>
+          <li>
+            <NavLink to="/push" active={path === '/push'} icon={<Bell className="w-3.5 h-3.5" />}>Push notifications</NavLink>
           </li>
           <li>
             <NavLink to="/settings" active={path === '/settings'} icon={<SettingsIcon className="w-3.5 h-3.5" />}>Settings &amp; modules</NavLink>

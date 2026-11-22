@@ -102,7 +102,7 @@ An installed app keeps its own cookies (on iOS it does not share Safari's), so
 the first launch shows a **sign-in page**: enter the dashboard token once. The
 sign-in lasts 30 days.
 
-This also enables push notifications: ☰ → **Development → Push → Subscribe this
+This also enables push notifications: ☰ → **Push notifications → Subscribe this
 device**, then **Test push**. On iOS (16.4+) push works only from the installed
 app, not from a Safari tab, and notifications don't show action buttons (Safari
 web push does not support them, as far as current reports go). Tapping one opens
