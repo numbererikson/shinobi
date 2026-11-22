@@ -37,15 +37,37 @@ Auth reuses the dashboard token middleware:
 > 💸 Want this for $0/month? Follow the step-by-step
 > [GCP free tier + Cloudflare Tunnel walkthrough](deploy-gcp-free.md).
 
-## Quickstart: Docker on a VPS
+## Quickstart: Docker Compose (recommended)
 
 ```bash
-docker build -t shinobi .
+mkdir ~/shinobi-server && cd ~/shinobi-server
+curl -fsSLO https://raw.githubusercontent.com/numbererikson/shinobi/main/compose.yaml
+umask 077 && echo "SHINOBI_DASHBOARD_TOKEN=$(openssl rand -hex 24)" > shinobi.env
+docker compose up -d
+docker compose ps        # STATUS shows (healthy) after ~20 s
+```
+
+Read the token later with `grep TOKEN ~/shinobi-server/shinobi.env`; it is
+never printed in logs. Upgrade with:
+
+```bash
+cd ~/shinobi-server && docker compose pull && docker compose up -d
+```
+
+Optional nightly auto-upgrade (04:17), which skips the restart when nothing changed:
+
+```bash
+( crontab -l 2>/dev/null; echo '17 4 * * * cd $HOME/shinobi-server && docker compose pull -q && docker compose up -d' ) | crontab -
+```
+
+Plain `docker run` works too:
+
+```bash
 docker run -d --name shinobi --restart unless-stopped \
   -p 127.0.0.1:8765:8765 \
   -v shinobi-data:/data \
-  -e SHINOBI_DASHBOARD_TOKEN="$(openssl rand -hex 24)" \
-  shinobi
+  --env-file shinobi.env \
+  shinobiapps/shinobi:latest
 ```
 
 The volume on `/data` is **mandatory in practice** — the SQLite database
