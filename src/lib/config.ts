@@ -8,6 +8,9 @@ export interface ShinobiConfig {
     branch: string;
     last_push_at?: string | null;
     last_pull_at?: string | null;
+    /** Last failed push (local snapshot or remote), cleared by the next good push. */
+    last_error?: string | null;
+    last_error_at?: string | null;
   };
 }
 

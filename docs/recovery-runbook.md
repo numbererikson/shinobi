@@ -88,7 +88,7 @@ Expected time: **30–45 minutes**, dominated by the Docker build.
 
 ## C. Restore database from backup
 
-The nightly `sync push` snapshots the DB into the private sync repo. To pull
+The nightly built-in `sync push` snapshots the DB into the private sync repo. To pull
 that snapshot back into a running container:
 
 ```bash

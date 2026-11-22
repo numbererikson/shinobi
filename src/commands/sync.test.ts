@@ -7,7 +7,9 @@ import { join } from 'node:path';
 import { applyPendingMigrations } from '../lib/migrations.js';
 import { closeDb, getDb } from '../lib/db.js';
 import { createProject } from '../models/projects.js';
-import { syncInit, syncPull } from './sync.js';
+import { execFileSync } from 'node:child_process';
+import { loadConfig } from '../lib/config.js';
+import { syncInit, syncPull, syncPush } from './sync.js';
 
 let tmp: string;
 let livePath: string;
@@ -58,5 +60,29 @@ describe('syncPull', () => {
     expect(reopened.pragma('integrity_check', { simple: true })).toBe('ok');
     expect(titles(reopened)).toEqual(['in snapshot']);
     reopened.close();
+  });
+});
+
+describe('syncPush', () => {
+  it('a failed remote push is recorded as an error, and the next good push clears it', async () => {
+    for (const [k, v] of Object.entries({ GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.com' })) {
+      process.env[k] = v;
+    }
+    syncInit(repoPath);
+    execFileSync('git', ['remote', 'add', 'origin', 'https://user:secret@127.0.0.1:9/nope.git'], { cwd: repoPath, stdio: 'ignore' });
+    createProject({ title: 'to back up' });
+
+    await expect(syncPush()).rejects.toThrow(/push to remote failed/);
+    const failed = loadConfig().sync!;
+    expect(failed.last_push_at).toBeNull();
+    expect(failed.last_error).toMatch(/push to remote failed/);
+    expect(failed.last_error).not.toContain('secret');
+    expect(failed.last_error_at).toBeTruthy();
+
+    execFileSync('git', ['remote', 'remove', 'origin'], { cwd: repoPath, stdio: 'ignore' });
+    await syncPush();
+    const ok = loadConfig().sync!;
+    expect(ok.last_push_at).toBeTruthy();
+    expect(ok.last_error).toBeNull();
   });
 });
