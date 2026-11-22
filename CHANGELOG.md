@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`chart` block for plugin pages.** Line or bar chart with ≤ 4 series and
+  ≤ 90 points. It has hover tooltips, a legend, a "Show data" table, and a
+  colour-blind-safe palette. It is drawn as plain SVG, with no new dependency.
+
 - **Nightly backup and backup alerts.** With `shinobi sync` set up, the
   server pushes a snapshot every night (`SHINOBI_BACKUP_CRON`, default
   `17 3 * * *`, `off` to disable; `SHINOBI_TIMEZONE`). A failed push, or no

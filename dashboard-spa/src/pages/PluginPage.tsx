@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { PluginIcon } from '../components/PluginIcon';
+import { PluginChart } from '../components/PluginChart';
 import { getPluginPage, runPluginPageAction, type PluginBlock, type PluginButton, type PluginPage as Page, type PluginTone } from '../lib/api';
 
 const toneText: Record<PluginTone, string> = {
@@ -236,6 +237,8 @@ function Block({ block, busy, onPress }: { block: PluginBlock; busy: string | nu
       );
     case 'input':
       return <InputBlock block={block} busy={busy} onPress={onPress} />;
+    case 'chart':
+      return <PluginChart block={block} />;
     case 'divider':
       return <hr className="border-border" />;
     default:
