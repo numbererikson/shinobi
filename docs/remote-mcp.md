@@ -60,6 +60,24 @@ Optional nightly auto-upgrade (04:17), which skips the restart when nothing chan
 ( crontab -l 2>/dev/null; echo '17 4 * * * cd $HOME/shinobi-server && docker compose pull -q && docker compose up -d' ) | crontab -
 ```
 
+### Backups and alerts
+
+Keep a second copy of the brain off the machine. Once `shinobi sync` points
+at a private git repo (see
+[deploy-gcp-free.md](deploy-gcp-free.md) for the one-time clone), the
+server:
+
+- pushes a snapshot every night at 03:17 (`SHINOBI_BACKUP_CRON`, `off` to
+  disable; `SHINOBI_TIMEZONE=Europe/Zagreb` for local time);
+- sends a **push notification** when a push fails (also a failed `git push`
+  to the remote) or when there has been no good backup for 26 hours
+  (`SHINOBI_BACKUP_MAX_AGE_HOURS`), at most once a day while it lasts.
+  The Sync panel in the sidebar shows the last error.
+
+A dead server cannot alert about itself. Add a free external uptime monitor
+(UptimeRobot, Better Stack, healthchecks.io, …) on
+`https://<your-host>/health`; it answers `200` without a token.
+
 Plain `docker run` works too:
 
 ```bash

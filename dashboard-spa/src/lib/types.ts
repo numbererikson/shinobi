@@ -160,6 +160,8 @@ export interface SyncConfig {
   branch: string;
   last_push_at: string | null;
   last_pull_at: string | null;
+  last_error?: string | null;
+  last_error_at?: string | null;
 }
 
 export interface SyncStatusResponse {

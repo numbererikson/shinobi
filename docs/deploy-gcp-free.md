@@ -195,10 +195,10 @@ claude mcp add --transport http shinobi https://shinobi.yourdomain.com/mcp \
   docker exec shinobi git -C /data/sync config user.email "shinobi@localhost"
   docker exec shinobi node /app/dist/cli.js sync init /data/sync
   docker exec shinobi node /app/dist/cli.js sync push   # test it
-
-  # nightly cron on the VM host:
-  ( crontab -l 2>/dev/null; echo '0 3 * * * docker exec shinobi node /app/dist/cli.js sync push' ) | crontab -
   ```
+
+  Shinobi then pushes a snapshot every night by itself (see
+  [Backups and alerts](remote-mcp.md#backups-and-alerts)); no host cron needed.
 
   The clone lives on the `/data` volume, so credentials and git config
   survive container upgrades.

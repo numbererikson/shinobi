@@ -69,6 +69,7 @@ import {
 } from '../services/telemetry/client.js';
 import { listSavedDigests, runDigest } from '../commands/digest.js';
 import { startDigestScheduler } from '../services/digest/scheduler.js';
+import { startBackupScheduler } from '../services/backup/watch.js';
 import {
   countUsers,
   createUser,
@@ -1350,6 +1351,13 @@ export async function startDashboard(options: StartDashboardOptions = {}): Promi
     startDigestScheduler();
   } catch (err) {
     stderr.write(`digest scheduler: start failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  }
+
+  // Nightly `sync push` + push alerts when a backup fails or goes stale.
+  try {
+    startBackupScheduler();
+  } catch (err) {
+    stderr.write(`backup scheduler: start failed: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 
   // Plugin schedules tick only here — the one long-lived process that loads

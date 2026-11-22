@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { stderr, stdout } from 'node:process';
 import { closeDb, getDb, getDbPath } from '../lib/db.js';
-import { loadConfig, patchConfig } from '../lib/config.js';
+import { loadConfig, patchConfig, type ShinobiConfig } from '../lib/config.js';
 import { broadcastSyncAvailable } from '../services/relay/client.js';
 
 const SNAPSHOT_NAME = 'shinobi.db';
@@ -72,6 +72,24 @@ export function syncInit(repoPath: string, branch = 'main'): void {
 
 export async function syncPush(): Promise<void> {
   const config = requireSyncConfig();
+  try {
+    await pushSnapshot(config);
+  } catch (err) {
+    // Never store or show credentials embedded in a remote URL.
+    const message = (err instanceof Error ? err.message : String(err)).replace(/\/\/[^/@\s]+@/g, '//***@');
+    patchConfig({ sync: { ...loadSyncSection(config), last_error: message.slice(0, 500), last_error_at: new Date().toISOString() } });
+    throw err;
+  }
+}
+
+/** Re-read the sync section so a failure record never clobbers fields written meanwhile. */
+function loadSyncSection(fallback: SyncSection): SyncSection {
+  return loadConfig().sync ?? fallback;
+}
+
+type SyncSection = NonNullable<ShinobiConfig['sync']>;
+
+async function pushSnapshot(config: SyncSection): Promise<void> {
   assertGitRepo(config.repo_path);
 
   const snapshotTarget = join(config.repo_path, SNAPSHOT_NAME);
@@ -89,19 +107,21 @@ export async function syncPush(): Promise<void> {
 
   const statusOut = git(config.repo_path, ['status', '--porcelain']);
   if (statusOut === '') {
-    stdout.write('no changes to push (snapshot identical to last push)\n');
-    patchConfig({ sync: { ...config, last_push_at: new Date().toISOString() } });
-    return;
+    // Nothing new to commit — but still push below, so a commit left behind
+    // by an earlier failed remote push reaches the remote now.
+    stdout.write('no changes to commit (snapshot identical to last push)\n');
+  } else {
+    const message = `shinobi sync push ${new Date().toISOString()}`;
+    git(config.repo_path, ['commit', '-m', message]);
   }
-
-  const message = `shinobi sync push ${new Date().toISOString()}`;
-  git(config.repo_path, ['commit', '-m', message]);
 
   const remoteCheck = tryGit(config.repo_path, ['remote']);
   if (remoteCheck.ok && remoteCheck.stdout !== '') {
     const pushResult = tryGit(config.repo_path, ['push', '-u', 'origin', config.branch]);
     if (!pushResult.ok) {
-      stderr.write(`push to remote failed (commit landed locally):\n${pushResult.err}\n`);
+      // The commit landed locally, but the off-machine copy did not: that is a
+      // failed backup, so surface it (exit code, dashboard, push alert).
+      throw new Error(`push to remote failed (commit landed locally): ${(pushResult.err ?? '').trim()}`);
     } else {
       stdout.write(`pushed to origin/${config.branch}\n`);
     }
@@ -109,7 +129,7 @@ export async function syncPush(): Promise<void> {
     stdout.write(`committed locally; no remote configured. Add one with: git -C ${config.repo_path} remote add origin <url>\n`);
   }
 
-  patchConfig({ sync: { ...config, last_push_at: new Date().toISOString() } });
+  patchConfig({ sync: { ...config, last_push_at: new Date().toISOString(), last_error: null, last_error_at: null } });
 
   // Notify other connected agents (if relay is configured) that a fresh
   // snapshot is now available on the remote. They will auto-pull.

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Nightly backup and backup alerts.** With `shinobi sync` set up, the
+  server pushes a snapshot every night (`SHINOBI_BACKUP_CRON`, default
+  `17 3 * * *`, `off` to disable; `SHINOBI_TIMEZONE`). A failed push, or no
+  good backup for 26 hours (`SHINOBI_BACKUP_MAX_AGE_HOURS`), sends a push
+  notification at most once a day, and the Sync panel shows the error.
+
 - **Manage plugins from the dashboard, no terminal.** Plugins now has a
   "Plugins on this server" section:
   - **Catalog:** one-click installs from a JSON catalog (`SHINOBI_PLUGIN_CATALOG_URL`).
@@ -33,6 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AdGuard, reminders, …) instead of ~85 tools. `/mcp` is unchanged. OAuth
   works on both endpoints, and `/mcp/home` has its own path-suffixed resource
   metadata.
+
+### Fixed
+
+- **A failed `git push` to the sync remote no longer counts as a backup.**
+  `sync push` now exits non-zero and records the error instead of updating
+  "last push". The next push also sends commits left behind by a failed one.
+  Credentials in a remote URL are masked in the stored error.
 
 ### Security
 

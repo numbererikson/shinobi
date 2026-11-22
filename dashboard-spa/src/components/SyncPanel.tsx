@@ -48,6 +48,9 @@ export function SyncPanel() {
         {status?.configured && sync ? (
           <>
             <div>push: <span className={sync.last_push_at ? 'text-success' : 'text-text-muted'}>{timeSince(sync.last_push_at) || 'never'}</span></div>
+            {sync.last_error && (!sync.last_push_at || (sync.last_error_at ?? '') >= sync.last_push_at) && (
+              <div className="text-danger break-all">last push failed {timeSince(sync.last_error_at ?? null)}: {sync.last_error}</div>
+            )}
             <div>pull: <span className={sync.last_pull_at ? 'text-success' : 'text-text-muted'}>{timeSince(sync.last_pull_at) || 'never'}</span></div>
             <div className="text-text-dim text-[10px] break-all">{sync.repo_path}<br/>(branch: {sync.branch})</div>
           </>
