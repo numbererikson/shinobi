@@ -77,6 +77,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docs/plugins.md` uses the current `register(registry, api)` API** and
   links to `plugin-development.md`.
 
+### Docs
+
+- **`docs/cloudflare-access.md`:** email login in front of the dashboard,
+  once per device per month, with bypass paths for `/mcp`, OAuth, `/health`
+  and the PWA manifest and icons.
+
 ## [0.7.2] — 2026-11-21
 
 Push notifications reach iPhones, and a failed push tells you why.
