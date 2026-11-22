@@ -466,3 +466,62 @@ export function setModuleEnabled(id: string, enabled: boolean): Promise<{ ok: bo
     body: JSON.stringify({ id, enabled }),
   });
 }
+
+// ---- Single-file plugins (Plugins page) ----
+
+export interface PluginFileInfo {
+  file: string;
+  url: string | null;
+  sha256: string | null;
+  installed_at: string | null;
+  loaded: boolean;
+  error: string | null;
+  pending_restart: boolean;
+}
+
+export interface CatalogPlugin {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  installed: boolean;
+}
+
+export interface PluginUpdateCheck {
+  file: string;
+  url: string;
+  update_available: boolean;
+  error: string | null;
+}
+
+export function listPluginFiles(): Promise<{ files: PluginFileInfo[]; restart_needed: boolean; can_restart: boolean }> {
+  return jsonFetch('/api/plugins/files');
+}
+
+export function getPluginCatalog(): Promise<{ plugins: CatalogPlugin[]; error?: string }> {
+  return jsonFetch('/api/plugins/catalog');
+}
+
+export async function installPluginFromUrl(url: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch('/api/plugins/install-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+  return (await res.json()) as { ok: boolean; error?: string };
+}
+
+export function checkPluginUpdates(): Promise<{ updates: PluginUpdateCheck[] }> {
+  return jsonFetch('/api/plugins/updates');
+}
+
+export async function updatePluginFile(file: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch('/api/plugins/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file }) });
+  return (await res.json()) as { ok: boolean; error?: string };
+}
+
+export async function removePluginFile(file: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch(`/api/plugins/files/${encodeURIComponent(file)}`, { method: 'DELETE' });
+  return (await res.json()) as { ok: boolean; error?: string };
+}
+
+export async function restartShinobi(): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch('/api/system/restart', { method: 'POST' });
+  return (await res.json()) as { ok: boolean; error?: string };
+}

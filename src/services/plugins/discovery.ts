@@ -10,7 +10,7 @@ export interface PluginCandidate {
   module_path: string;
 }
 
-function userPluginsDir(): string {
+export function userPluginsDir(): string {
   const override = process.env['SHINOBI_PLUGINS_DIR'];
   if (override && override.length > 0) return override;
   return join(homedir(), '.shinobi', 'plugins');

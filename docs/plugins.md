@@ -11,6 +11,20 @@ Shinobi loads plugins from two tiers:
 Both tiers are auto-discovered on dashboard startup; the loaded list is
 visible at `/plugins` under "Loaded at last startup".
 
+## Installing from the dashboard (single-file plugins)
+
+Dashboard → **Plugins** → **Plugins on this server**:
+
+- **Catalog:** one-click install of known plugins (music, AdGuard, Remember, …).
+  The catalog is a JSON file at `SHINOBI_PLUGIN_CATALOG_URL`. The default is
+  the `catalog.json` in `shinobi-plugin-example`.
+- **Install from URL:** paste an https link to a single `.mjs` file.
+- **Check for updates / Update / Remove** for each installed file.
+- **Restart now** (Docker): Shinobi exits and Docker's restart policy starts it
+  again with the new plugins loaded. Outside Docker, restart it yourself.
+
+A plugin runs with full access to the server, so install only what you trust.
+
 ## Browsing the marketplace
 
 Open `/plugins` in the dashboard:
