@@ -295,13 +295,13 @@ Plugins can be published as npm packages with the name pattern `@shinobi/plugin-
 
 ## Verifying a plugin loaded
 
-Call `mcp__shinobi__plugin_hello` from your MCP client. It returns the list of discovered plugins with their registered tool names and any load errors.
+Open **Dashboard → Plugins**. Every discovered plugin is listed with its tier, registered tools and any load error; **Settings → Modules** switches each plugin on or off.
 
 ## Failure modes
 
-- **No default export** — the plugin file loads but contributes nothing; `plugin_hello` reports `error: "no default/register export"`.
+- **No default export** — the plugin file loads but contributes nothing; Dashboard → Plugins shows `error: "no default/register export"`.
 - **Throwing register** — the plugin's tools are not registered; the throw is captured to `error`.
-- **Name collision** — registration throws synchronously; surface in `plugin_hello`.
+- **Name collision** — registration throws synchronously; shown in Dashboard → Plugins.
 - **Bad inputSchema** — accepted at registration; only fails at call time when MCP validates.
 
 Plugins do not impede built-in tool availability — a broken plugin leaves the built-ins intact.

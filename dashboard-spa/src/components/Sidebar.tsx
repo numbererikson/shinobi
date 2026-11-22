@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import { Activity, Bell, CheckSquare, Code, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
 import { WorkspaceBadge } from './WorkspaceBadge';
 import { PluginIcon } from './PluginIcon';
-import { listPluginPages, type PluginPageSummary } from '../lib/api';
+import { getRelayStatus, getTelemetrySummary, listPluginPages, type PluginPageSummary } from '../lib/api';
 import { useModules } from '../lib/modules';
 import { SyncPanel } from './SyncPanel';
 import type { Project } from '../lib/types';
@@ -47,6 +47,17 @@ export function Sidebar({ projects }: SidebarProps) {
   const { developmentOn } = useModules();
 
   const [apps, setApps] = useState<PluginPageSummary[]>([]);
+  // Relay and Telemetry are opt-in extras: only list them once configured.
+  const [relayOn, setRelayOn] = useState(false);
+  const [telemetryOn, setTelemetryOn] = useState(false);
+  useEffect(() => {
+    getRelayStatus()
+      .then((r) => setRelayOn(r.url !== null))
+      .catch(() => setRelayOn(false));
+    getTelemetrySummary()
+      .then((t) => setTelemetryOn(t.enabled || t.total_events > 0))
+      .catch(() => setTelemetryOn(false));
+  }, []);
   useEffect(() => {
     let cancelled = false;
     const load = () =>
@@ -137,9 +148,11 @@ export function Sidebar({ projects }: SidebarProps) {
             <li>
               <NavLink to="/push" active={path === '/push'} icon={<Bell className="w-3.5 h-3.5" />}>Push</NavLink>
             </li>
-            <li>
-              <NavLink to="/relay" active={path === '/relay'} icon={<Radio className="w-3.5 h-3.5" />}>Relay</NavLink>
-            </li>
+            {(relayOn || path === '/relay') && (
+              <li>
+                <NavLink to="/relay" active={path === '/relay'} icon={<Radio className="w-3.5 h-3.5" />}>Relay</NavLink>
+              </li>
+            )}
           </ul>
 
           <SectionTitle>Projects</SectionTitle>
@@ -182,9 +195,11 @@ export function Sidebar({ projects }: SidebarProps) {
           <li>
             <NavLink to="/settings" active={path === '/settings'} icon={<SettingsIcon className="w-3.5 h-3.5" />}>Settings &amp; modules</NavLink>
           </li>
-          <li>
-            <NavLink to="/telemetry" active={path === '/telemetry'} icon={<Activity className="w-3.5 h-3.5" />}>Telemetry</NavLink>
-          </li>
+          {(telemetryOn || path === '/telemetry') && (
+            <li>
+              <NavLink to="/telemetry" active={path === '/telemetry'} icon={<Activity className="w-3.5 h-3.5" />}>Telemetry</NavLink>
+            </li>
+          )}
         </ul>
         <SyncPanel />
       </div>
