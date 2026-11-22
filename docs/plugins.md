@@ -42,14 +42,15 @@ Open `/plugins` in the dashboard:
 
 ## Anatomy of a plugin
 
-Every plugin module exports a `register(tools)` function:
+A plugin's default export receives the registry (tools, pages, scoped state,
+schedules, notifications) and a read-only API:
 
 ```js
-// ~/.shinobi/plugins/example.mjs
-export function register(tools) {
-  tools.appendTool({
+// ~/.shinobi/plugins/shinobi-plugin-echo.mjs
+export default function register(registry, api) {
+  registry.registerTool({
     name: 'plugin_echo',
-    description: 'Echoes its input back. Exists to prove the plugin system works.',
+    description: 'Echoes its input back.',
     inputSchema: {
       type: 'object',
       properties: { message: { type: 'string' } },
@@ -61,13 +62,14 @@ export function register(tools) {
 }
 ```
 
-Plugins can register any number of MCP tools the same way built-in ones do.
-The registry is global; collisions throw a clear error at startup.
+Tool names collide-check at startup. The full API (`registry.state`,
+`registry.registerPage` blocks, `registry.schedule`, `registry.notify`) is in
+[plugin-development.md](plugin-development.md).
 
 ## Publishing a plugin
 
-There's no template repo yet — just create a tiny package that exports
-`register`:
+Start from `shinobi-plugin-example`, or create a tiny package whose default
+export is `register`:
 
 ```json
 {

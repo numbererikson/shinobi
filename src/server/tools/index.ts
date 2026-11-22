@@ -9,7 +9,6 @@ import { historyTools } from './history.js';
 import { noteTools } from './notes.js';
 import { notifyTools } from './notify.js';
 import { planTools } from './plans.js';
-import { pluginTools } from './plugin.js';
 import { projectTools } from './projects.js';
 import { recallTools } from './recall.js';
 import { allTools, appendTool, getTool, resetTools, toolNames } from './registry.js';
@@ -35,7 +34,6 @@ export function registerBuiltins(): void {
     ...gitTools,
     ...extractionTools,
     ...workflowTools,
-    ...pluginTools,
     ...approvalTools,
     ...notifyTools,
     ...findingsTools,

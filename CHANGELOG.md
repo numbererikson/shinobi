@@ -45,6 +45,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - MCP clients use OAuth (Claude app) or `Authorization: Bearer` (Claude Code).
   - Startup logs no longer print the token.
 
+### Removed
+
+- **`plugin_hello` tool.** Dashboard → Plugins already lists loaded plugins,
+  their tools and load errors. 39 core tools remain.
+
+### Changed
+
+- **Relay and Telemetry hide from the sidebar until they are used.** Relay
+  shows once `SHINOBI_RELAY_URL` is set; Telemetry once it is on or has events.
+- **`docs/plugins.md` uses the current `register(registry, api)` API** and
+  links to `plugin-development.md`.
+
 ## [0.7.2] — 2026-11-21
 
 Push notifications reach iPhones, and a failed push tells you why.
