@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-11-22
+
+Plugins install from the dashboard, Compose is the recommended setup,
+the nightly backup is built in and alerts on failure, and tokens never
+appear in URLs.
+
 ### Added
 
 - **`chart` block for plugin pages.** Line or bar chart with ≤ 4 series and
