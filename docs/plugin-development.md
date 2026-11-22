@@ -162,6 +162,7 @@ export default function register(registry) {
 | `progress` | `label`, `value`, `max`, `hint?` |
 | `actions` | `buttons: [{ label, tool, args?, confirm?, variant? }]` |
 | `input` | `tool`, `arg`, `button`, `label?`, `placeholder?`, `args?`, `maxLength?` (≤ 2000, default 500): a text field whose submit calls `tool` with `{ ...args, [arg]: <typed text> }` |
+| `chart` | `labels: string[]` (≤ 90), `series: [{ name, values }]` (≤ 4; one number per label, `null` = gap), `kind?` (`line` default, or `bar`), `title?`, `unit?` |
 | `divider` | — |
 
 `tone` is one of `default`, `muted`, `ok`, `warn`, `error`. Button `variant`

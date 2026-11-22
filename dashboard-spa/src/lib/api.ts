@@ -389,6 +389,7 @@ export type PluginBlock =
   | { type: 'progress'; label: string; value: number; max: number; hint?: string }
   | { type: 'actions'; buttons: PluginButton[] }
   | { type: 'input'; label?: string; placeholder?: string; button: string; tool: string; arg: string; args?: Record<string, unknown>; maxLength: number }
+  | { type: 'chart'; kind: 'line' | 'bar'; labels: string[]; series: { name: string; values: (number | null)[] }[]; title?: string; unit?: string }
   | { type: 'divider' };
 
 export interface PluginPageSummary {

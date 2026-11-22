@@ -22,6 +22,7 @@ export type PluginBlock =
   | { type: 'progress'; label: string; value: number; max: number; hint?: string }
   | { type: 'actions'; buttons: PluginButton[] }
   | { type: 'input'; label?: string; placeholder?: string; button: string; tool: string; arg: string; args?: Record<string, unknown>; maxLength: number }
+  | { type: 'chart'; kind: 'line' | 'bar'; labels: string[]; series: { name: string; values: (number | null)[] }[]; title?: string; unit?: string }
   | { type: 'divider' };
 
 export interface PluginButton {
@@ -71,6 +72,9 @@ const MAX_BLOCKS = 100;
 const MAX_ROWS = 500;
 const MAX_ITEMS = 200;
 const MAX_TEXT = 2000;
+const MAX_CHART_POINTS = 90;
+/** Four series keep every adjacent colour pair distinguishable for colour-blind readers. */
+const MAX_CHART_SERIES = 4;
 const TONES = new Set<Tone>(['default', 'muted', 'ok', 'warn', 'error']);
 const ARG_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,40}$/;
 
@@ -249,6 +253,32 @@ export function sanitizeBlocks(raw: unknown, plugin: string): PluginBlock[] {
         const placeholder = optStr(b.placeholder, 120);
         if (placeholder) block.placeholder = placeholder;
         if (b.args && typeof b.args === 'object' && !Array.isArray(b.args)) block.args = b.args as Record<string, unknown>;
+        out.push(block);
+        break;
+      }
+      case 'chart': {
+        const labels = (Array.isArray(b.labels) ? b.labels : []).slice(0, MAX_CHART_POINTS).map((l) => str(l, 40));
+        if (labels.length === 0) break;
+        const series = (Array.isArray(b.series) ? b.series : []).slice(0, MAX_CHART_SERIES).flatMap((x) => {
+          if (!x || typeof x !== 'object') return [];
+          const sr = x as Record<string, unknown>;
+          const raw = Array.isArray(sr.values) ? sr.values : [];
+          // One value per label; anything missing or non-numeric is a gap.
+          const values = labels.map((_, i) => {
+            const v = raw[i];
+            if (v === null || v === undefined || v === '') return null;
+            const n = typeof v === 'number' ? v : Number(v);
+            return Number.isFinite(n) ? n : null;
+          });
+          if (values.every((v) => v === null)) return [];
+          return [{ name: str(sr.name, 60) || 'Series', values }];
+        });
+        if (series.length === 0) break;
+        const block: Extract<PluginBlock, { type: 'chart' }> = { type: 'chart', kind: b.kind === 'bar' ? 'bar' : 'line', labels, series };
+        const title = optStr(b.title, 120);
+        if (title) block.title = title;
+        const unit = optStr(b.unit, 20);
+        if (unit) block.unit = unit;
         out.push(block);
         break;
       }

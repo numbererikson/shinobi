@@ -163,3 +163,45 @@ describe('input block', () => {
   });
 });
 
+
+describe('chart block', () => {
+  it('aligns values to labels, turns junk into gaps and caps series', () => {
+    const blocks = sanitizeBlocks(
+      [
+        {
+          type: 'chart',
+          kind: 'bar',
+          title: 'Weight',
+          unit: 'kg',
+          labels: ['Mon', 'Tue', 'Wed'],
+          series: [
+            { name: 'Me', values: [80, '79.5', 'x', 99] },
+            { name: 'Empty', values: [null, 'nope'] },
+            { name: 'a', values: [1] },
+            { name: 'b', values: [1] },
+            { name: 'c', values: [1] },
+            { name: 'd', values: [1] },
+          ],
+        },
+        { type: 'chart', labels: [], series: [{ name: 'x', values: [1] }] },
+        { type: 'chart', kind: 'pie', labels: ['a'], series: [{ values: [2] }] },
+      ],
+      'user/m',
+    );
+    expect(blocks).toEqual([
+      {
+        type: 'chart',
+        kind: 'bar',
+        title: 'Weight',
+        unit: 'kg',
+        labels: ['Mon', 'Tue', 'Wed'],
+        series: [
+          { name: 'Me', values: [80, 79.5, null] },
+          { name: 'a', values: [1, null, null] },
+          { name: 'b', values: [1, null, null] },
+        ],
+      },
+      { type: 'chart', kind: 'line', labels: ['a'], series: [{ name: 'Series', values: [2] }] },
+    ]);
+  });
+});
