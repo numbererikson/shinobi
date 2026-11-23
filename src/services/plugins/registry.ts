@@ -20,6 +20,7 @@ import {
 import { findPlugin, recordPlugin } from './state.js';
 import { registerPluginPage, type PluginPageDef } from './pages.js';
 import { registerPluginSchedule, validateScheduleDef, type PluginScheduleDef } from './schedules.js';
+import { registerBriefSection, validateBriefSection, type BriefSectionDef } from '../brief/brief.js';
 
 const PLUGIN_TOOL_NAME = /^plugin_[a-z][a-z0-9_]*$/;
 
@@ -62,6 +63,12 @@ export interface PluginRegistry {
    * delivery failure; invalid input throws.
    */
   notify(notification: PluginNotification): Promise<SafePushResult>;
+  /**
+   * Add a short section to the daily morning brief (plain text lines, e.g.
+   * today's reminders). Return null to stay out of a given day's brief.
+   * Plugins written for older hosts should check `typeof registry.brief`.
+   */
+  brief(def: BriefSectionDef): void;
   /** Durable, SQLite-backed state scoped to this plugin. */
   state: PluginStateStore;
 }
@@ -109,6 +116,9 @@ function buildPluginRegistry(pluginName: string, api: ShinobiApi): PluginRegistr
     notify(notification) {
       return sendPluginNotification(pluginName, notification, (tool) => resolveOwnedTool(pluginName, tool) !== null);
     },
+    brief(def) {
+      registerBriefSection(pluginName, def, api);
+    },
   };
 }
 
@@ -133,6 +143,7 @@ export function createInProcessRegistry(
   tools: Map<string, PluginToolDef>;
   pages: Map<string, PluginPageDef>;
   schedules: Map<string, PluginScheduleDef>;
+  briefs: Map<string, BriefSectionDef>;
   call: (name: string, args?: Record<string, unknown>) => Promise<unknown>;
   runSchedule: (id: string) => Promise<unknown>;
   runPushAction: (token: string) => Promise<PushActionResult>;
@@ -140,6 +151,7 @@ export function createInProcessRegistry(
   const tools = new Map<string, PluginToolDef>();
   const pages = new Map<string, PluginPageDef>();
   const schedules = new Map<string, PluginScheduleDef>();
+  const briefs = new Map<string, BriefSectionDef>();
   const registry: PluginRegistry = {
     state: scopedPluginState(pluginName),
     registerTool(def) {
@@ -165,6 +177,11 @@ export function createInProcessRegistry(
     notify(notification) {
       return sendPluginNotification(pluginName, notification, (tool) => tools.has(tool), options.send);
     },
+    brief(def) {
+      validateBriefSection(pluginName, def);
+      if (briefs.has(def.id)) throw new Error(`plugin '${pluginName}': duplicate brief section '${def.id}'`);
+      briefs.set(def.id, def);
+    },
   };
   const call = async (name: string, args: Record<string, unknown> = {}): Promise<unknown> => {
     const def = tools.get(name);
@@ -181,7 +198,7 @@ export function createInProcessRegistry(
       const def = plugin === pluginName ? tools.get(tool) : undefined;
       return def ? (args) => def.handler(args, api) : null;
     });
-  return { registry, tools, pages, schedules, call, runSchedule, runPushAction };
+  return { registry, tools, pages, schedules, briefs, call, runSchedule, runPushAction };
 }
 
 export async function loadDiscoveredPlugins(): Promise<void> {

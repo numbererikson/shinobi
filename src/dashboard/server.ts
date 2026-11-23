@@ -71,6 +71,7 @@ import {
 import { listSavedDigests, runDigest } from '../commands/digest.js';
 import { startDigestScheduler } from '../services/digest/scheduler.js';
 import { startBackupScheduler } from '../services/backup/watch.js';
+import { startBriefScheduler } from '../services/brief/brief.js';
 import {
   countUsers,
   createUser,
@@ -1352,6 +1353,8 @@ export async function startDashboard(options: StartDashboardOptions = {}): Promi
   // plugins. stdio MCP processes register schedules but never run them.
   if (mcp) {
     startPluginScheduler();
+    // The morning brief reads plugin sections, so it runs where plugins load.
+    startBriefScheduler();
   }
 
   return server;

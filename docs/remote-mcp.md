@@ -81,6 +81,12 @@ server:
   (`SHINOBI_BACKUP_MAX_AGE_HOURS`), at most once a day while it lasts.
   The Sync panel in the sidebar shows the last error.
 
+Every morning at 07:45 the server also pushes a short **morning brief**:
+what needs attention, plugin sections (e.g. today's reminders) and backup
+status. Use `SHINOBI_BRIEF_CRON` to move it (`off` to disable) and
+`SHINOBI_BRIEF_TITLE` to rename it. The `morning_brief` tool previews it, or
+sends it now with `send: true`.
+
 A dead server cannot alert about itself. Add a free external uptime monitor
 (UptimeRobot, Better Stack, healthchecks.io, …) on
 `https://<your-host>/health`; it answers `200` without a token.

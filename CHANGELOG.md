@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Morning brief.** The server pushes one short message a day:
+  - what `system_status` says needs attention;
+  - each plugin's section;
+  - backup status;
+  - stalled projects.
+
+  It runs at 07:45 by default: `SHINOBI_BRIEF_CRON` (`off` to disable),
+  `SHINOBI_TIMEZONE` and `SHINOBI_BRIEF_TITLE` change it. Plugins add
+  sections with `registry.brief({ id, order?, render })`, and a switched-off
+  module drops out of the brief. The `morning_brief` tool (System group, also
+  on `/mcp/home`) previews it, or sends it now with `send: true`.
+
 ### Fixed
 
 - **`system_status` dates projects by their latest activity.** It uses the
