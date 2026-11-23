@@ -261,6 +261,35 @@ const result = await registry.notify({
 - `notify` works from any process — a tool handler in a stdio session or a
   schedule in the dashboard.
 
+## Morning brief (`registry.brief`)
+
+Every morning the server pushes one short brief: problems from
+`system_status`, then each plugin's section, then backups and stalled
+projects. A plugin adds its own lines:
+
+```js
+if (typeof registry.brief === 'function') {
+  registry.brief({
+    id: 'today',
+    order: 10, // lower first among plugin sections (default 100)
+    render: () => {
+      const due = todaysReminders();
+      return due.length ? `🔔 Today: ${due.map((r) => `${r.time} ${r.text}`).join(', ')}` : null;
+    },
+  });
+}
+```
+
+- `render` returns a string (newlines allowed) or an array of lines. Return
+  `null` or `''` to stay out of today's brief.
+- Plain text only: at most 6 lines per section, 200 characters per line. A
+  render that throws or takes longer than 5 s shows as "(Name: not available)".
+- A switched-off module drops out of the brief.
+- The time is `SHINOBI_BRIEF_CRON` (default `45 7 * * *`, `off` disables) in
+  `SHINOBI_TIMEZONE`. The `morning_brief` tool previews it, and pushes it now
+  with `send: true`.
+- In tests, `createInProcessRegistry(...).briefs` holds the registered sections.
+
 ## Modules
 
 Every plugin is a module that the owner can switch off under **Settings →

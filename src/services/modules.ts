@@ -14,7 +14,7 @@ export const DEVELOPMENT = 'development';
  * notifications and the server health report. Not a switchable module.
  */
 export const SYSTEM = 'system';
-const SYSTEM_TOOLS = new Set(['notify', 'system_status']);
+const SYSTEM_TOOLS = new Set(['notify', 'system_status', 'morning_brief']);
 
 export interface ModuleInfo {
   id: string;
