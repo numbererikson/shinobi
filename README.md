@@ -255,7 +255,7 @@ Commands:
         [--project N] [--drain]   brain. Atomic claim → no two agents take the same task. --no-worktree / --keep-worktrees
 ```
 
-## MCP tools (39)
+## MCP tools (40)
 
 | Group | Tools |
 |---|---|
@@ -271,7 +271,7 @@ Commands:
 | Workflow | agent_bootstrap, session_closeout, file_context |
 | Extraction | extract_decisions, compress_session_summary |
 | Approvals | request_approval |
-| Notifications | notify |
+| System (always on, also on `/mcp/home`) | notify, system_status |
 | Findings | ingest_findings |
 
 ## Architecture

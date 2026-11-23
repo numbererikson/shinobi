@@ -31,6 +31,7 @@ beforeAll(() => {
   resetPluginPages();
   appendTool({ name: 'list_projects', description: '', inputSchema: {}, handler: () => [] });
   appendTool({ name: 'plugin_music_play', description: '', inputSchema: {}, handler: () => 'ok' });
+  appendTool({ name: 'system_status', description: '', inputSchema: {}, handler: () => ({}) });
   recordPlugin({ name: 'user/shinobi-plugin-music', source: 'user', module_path: 'file:///m.mjs', tools_registered: ['plugin_music_play'], pages_registered: [], schedules_registered: [], error: null });
   registerPluginPage('user/shinobi-plugin-music', { id: 'music', title: 'Music', render: () => [] });
 });
@@ -89,10 +90,14 @@ describe('modules', () => {
   });
 
   it('/mcp/home leaves out Development; /mcp offers everything enabled', () => {
-    expect(visibleTools().map((t) => t.name).sort()).toEqual(['list_projects', 'plugin_music_play']);
-    expect(visibleTools({ excludeModules: [DEVELOPMENT] }).map((t) => t.name)).toEqual(['plugin_music_play']);
+    expect(visibleTools().map((t) => t.name).sort()).toEqual(['list_projects', 'plugin_music_play', 'system_status']);
+    expect(visibleTools({ excludeModules: [DEVELOPMENT] }).map((t) => t.name).sort()).toEqual(['plugin_music_play', 'system_status']);
     setModuleEnabled('user/shinobi-plugin-music', false);
-    expect(visibleTools({ excludeModules: [DEVELOPMENT] })).toEqual([]);
+    expect(visibleTools({ excludeModules: [DEVELOPMENT] }).map((t) => t.name)).toEqual(['system_status']);
+    // System tools stay even when Development is off.
+    setModuleEnabled(DEVELOPMENT, false);
+    expect(visibleTools().map((t) => t.name)).toEqual(['system_status']);
+    setModuleEnabled(DEVELOPMENT, true);
     setModuleEnabled('user/shinobi-plugin-music', true);
   });
 });
