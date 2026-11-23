@@ -174,6 +174,24 @@ export function getVapidPublicKey(): Promise<{ public_key: string }> {
   return jsonFetch('/api/push/vapid-key');
 }
 
+export interface InboxNotification {
+  id: number;
+  title: string;
+  body: string;
+  tag: string | null;
+  url: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+
+export function listNotifications(): Promise<{ notifications: InboxNotification[]; unread: number }> {
+  return jsonFetch('/api/notifications');
+}
+
+export function markNotificationsRead(): Promise<{ ok: boolean; marked: number }> {
+  return jsonFetch('/api/notifications/read', { method: 'POST', body: '{}' });
+}
+
 export function listPushSubscriptions(): Promise<PushSubscriptionRow[]> {
   return jsonFetch('/api/push/subscriptions');
 }

@@ -1,6 +1,7 @@
 // Web push service: VAPID key bootstrap (auto-generates on first use, persists
 // to <config dir>/.env via settings store) + sendPushToAll helper.
 
+import { recordNotification } from '../../models/notifications.js';
 import webpush from 'web-push';
 import { stderr } from 'node:process';
 import { listSubscriptions, recordSendResult, deleteSubscriptionByEndpoint } from '../../models/push_subscriptions.js';
@@ -117,7 +118,21 @@ export async function sendPushSafe(payload: PushPayload): Promise<SafePushResult
   }
 }
 
-export async function sendPushToAll(payload: PushPayload): Promise<PushDeliveryResult> {
+/** Where tapping a pushed notification leads: its own inbox entry. */
+export function inboxUrl(id: number): string {
+  return `/inbox#n${id}`;
+}
+
+export async function sendPushToAll(input: PushPayload): Promise<PushDeliveryResult> {
+  // Keep a copy in the inbox first, so it is readable even when delivery
+  // fails or the phone drops the banner. Inbox trouble never blocks the push.
+  let payload = input;
+  try {
+    const id = recordNotification({ title: input.title, body: input.body, tag: input.tag ?? null, url: input.url ?? null });
+    payload = { ...input, url: inboxUrl(id) };
+  } catch (err) {
+    stderr.write(`web-push: inbox record failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  }
   ensureVapidConfigured();
   const subscriptions = listSubscriptions();
   const out: PushDeliveryResult = {

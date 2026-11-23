@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Inbox.** Every push the server sends is also kept in a new Inbox
+  (System → Inbox, with an unread count). This covers the morning brief,
+  backup alerts, reminders, approvals and tests. Tapping a notification on
+  the phone opens its own entry, so a banner that vanished can still be read
+  in full. The sender's link shows as "Open". The last 500 are kept
+  (migration `0018_notifications`).
+
 ### Changed
 
 - **Smaller upgrades.** The Docker image builds production dependencies in

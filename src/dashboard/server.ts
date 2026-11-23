@@ -1,3 +1,4 @@
+import { listNotifications, markAllNotificationsRead, unreadNotificationCount } from '../models/notifications.js';
 import { serve, type ServerType } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
@@ -690,6 +691,15 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
       return c.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
     }
   });
+
+  // ---- Inbox: every push the server sent ----
+
+  app.get('/api/notifications', (c) => {
+    const limit = Number(c.req.query('limit') ?? 100);
+    return c.json({ notifications: listNotifications(limit), unread: unreadNotificationCount() });
+  });
+
+  app.post('/api/notifications/read', (c) => c.json({ ok: true, marked: markAllNotificationsRead() }));
 
   // ---- Approvals ----
 

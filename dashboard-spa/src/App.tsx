@@ -19,6 +19,7 @@ import { Settings } from './pages/Settings';
 import { Voice } from './pages/Voice';
 import { Approvals } from './pages/Approvals';
 import { Push } from './pages/Push';
+import { Inbox } from './pages/Inbox';
 import { Relay } from './pages/Relay';
 import { Plugins } from './pages/Plugins';
 import { PluginPage } from './pages/PluginPage';
@@ -35,6 +36,7 @@ export function App() {
           <Route path="/voice" element={<Voice />} />
           <Route path="/approvals" element={<Approvals />} />
           <Route path="/push" element={<Push />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="/relay" element={<Relay />} />
           <Route path="/plugins" element={<Plugins />} />
           <Route path="/apps/:pageId" element={<PluginPage />} />
