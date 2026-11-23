@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`system_status` dates projects by their latest activity.** It uses the
+  latest of the row update, the activity log and the last session closeout.
+  Projects quiet for 30+ days are `dormant` instead of `stalled`, so a daily
+  brief doesn't nag about parked work.
+
 ## [0.9.0] — 2026-11-23
 
 Groundwork for home agents: a server health report and an always-on System group.

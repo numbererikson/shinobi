@@ -14,6 +14,8 @@ import type { ShinobiTool } from './types.js';
 const DAY_MS = 86_400_000;
 const DISK_BACKUP_MAX_AGE_H = 26;
 const STALE_PROJECT_DAYS = 5;
+/** Past this, a project is parked rather than stalled: not worth a daily nudge. */
+const DORMANT_PROJECT_DAYS = 30;
 const LOW_DISK_PCT = 90;
 
 interface DiskBackupStatus {
@@ -98,18 +100,27 @@ export function systemStatus(now = new Date()): Record<string, unknown> {
   // ---- projects (only when Development is on) ----
   let projects: Record<string, unknown>[] | null = null;
   if (isModuleEnabled(DEVELOPMENT)) {
-    projects = listProjects()
+    projects = listProjects({ sort: 'active' })
       .filter((p) => p.status !== 'done')
-      .map((p) => ({
-        id: p.id,
-        title: p.title,
-        status: p.status,
-        progress: `${p.subtasks_done}/${p.subtasks_total}`,
-        days_since_update: Math.floor((now.getTime() - parseTime(p.updated_at)) / DAY_MS),
-      }))
-      .sort((a, b) => a.days_since_update - b.days_since_update)
-      .slice(0, 15)
-      .map((p) => ({ ...p, stalled: p.status === 'in_progress' && p.days_since_update >= STALE_PROJECT_DAYS }));
+      .map((p) => {
+        // Latest sign of life: the row itself, its activity log, or a session closeout.
+        const row = p as typeof p & { last_active?: string | null; recent_summary_at?: string | null };
+        const last = Math.max(
+          ...[p.updated_at, row.last_active, row.recent_summary_at].filter((t): t is string => !!t).map(parseTime).filter((t) => !Number.isNaN(t)),
+        );
+        const days = Math.floor((now.getTime() - last) / DAY_MS);
+        return {
+          id: p.id,
+          title: p.title,
+          status: p.status,
+          progress: `${p.subtasks_done}/${p.subtasks_total}`,
+          days_since_activity: days,
+          stalled: p.status === 'in_progress' && days >= STALE_PROJECT_DAYS && days < DORMANT_PROJECT_DAYS,
+          dormant: days >= DORMANT_PROJECT_DAYS,
+        };
+      })
+      .sort((a, b) => a.days_since_activity - b.days_since_activity)
+      .slice(0, 15);
   }
 
   return { now: now.toISOString(), ok: problems.length === 0, problems, server, backups: { github, disk }, plugins, push, projects };
@@ -120,7 +131,7 @@ export const systemTools: ShinobiTool[] = [
     name: 'system_status',
     description:
       'Health report of the Shinobi server for a daily brief or a quick check: version, uptime, load, memory, free disk, ' +
-      'GitHub and disk backup status, plugin load errors, push devices and (when Development is on) open projects with stalled ones flagged. ' +
+      'GitHub and disk backup status, plugin load errors, push devices and (when Development is on) open projects (stalled = in progress, 5–30 days quiet; dormant = 30+ days). ' +
       '`problems` lists everything that needs attention in plain sentences; empty means all is well. Read-only.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     handler: () => systemStatus(),
