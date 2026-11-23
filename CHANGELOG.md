@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-11-23
+
+Inbox for every notification, and much smaller upgrades from now on.
+
 ### Added
 
 - **Inbox.** Every push the server sends is also kept in a new Inbox
