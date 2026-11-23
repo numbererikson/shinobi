@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-11-23
+
+Groundwork for home agents: a server health report and an always-on System group.
+
 ### Added
 
 - **`system_status` tool.** It is the health report for a daily brief:
