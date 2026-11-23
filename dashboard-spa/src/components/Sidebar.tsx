@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Activity, Bell, CheckSquare, Code, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
+import { Activity, Bell, CheckSquare, Code, Inbox as InboxIcon, Mic, Package, Radio, Search, Settings as SettingsIcon } from 'lucide-react';
 import { WorkspaceBadge } from './WorkspaceBadge';
 import { PluginIcon } from './PluginIcon';
-import { getRelayStatus, getTelemetrySummary, listPluginPages, type PluginPageSummary } from '../lib/api';
+import { getRelayStatus, getTelemetrySummary, listNotifications, listPluginPages, type PluginPageSummary } from '../lib/api';
 import { useModules } from '../lib/modules';
 import { SyncPanel } from './SyncPanel';
 import type { Project } from '../lib/types';
@@ -13,7 +13,7 @@ interface SidebarProps {
   projects: Project[];
 }
 
-const SYSTEM_PATHS = ['/plugins', '/push', '/settings', '/telemetry'];
+const SYSTEM_PATHS = ['/inbox', '/plugins', '/push', '/settings', '/telemetry'];
 
 function NavLink({ to, active, icon, children }: { to: string; active: boolean; icon?: ReactNode; children: ReactNode }) {
   return (
@@ -50,6 +50,20 @@ export function Sidebar({ projects }: SidebarProps) {
   // Relay and Telemetry are opt-in extras: only list them once configured.
   const [relayOn, setRelayOn] = useState(false);
   const [telemetryOn, setTelemetryOn] = useState(false);
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    const load = () =>
+      listNotifications()
+        .then((r) => setUnread(r.unread))
+        .catch(() => setUnread(0));
+    void load();
+    const t = setInterval(() => void load(), 60_000);
+    window.addEventListener('shinobi:inbox-read', load);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('shinobi:inbox-read', load);
+    };
+  }, []);
   useEffect(() => {
     getRelayStatus()
       .then((r) => setRelayOn(r.url !== null))
@@ -186,6 +200,11 @@ export function Sidebar({ projects }: SidebarProps) {
       <div className="mt-auto pt-4">
         <SectionTitle>System</SectionTitle>
         <ul className="mb-2">
+          <li>
+            <NavLink to="/inbox" active={path === '/inbox'} icon={<InboxIcon className="w-3.5 h-3.5" />}>
+              Inbox{unread > 0 && <span className="ml-1.5 text-[10px] bg-accent-2 text-white rounded-full px-1.5 py-0.5">{unread}</span>}
+            </NavLink>
+          </li>
           <li>
             <NavLink to="/plugins" active={path === '/plugins'} icon={<Package className="w-3.5 h-3.5" />}>Plugins</NavLink>
           </li>

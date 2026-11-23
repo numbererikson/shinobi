@@ -68,11 +68,19 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
+  // Usually the notification's own inbox entry (/inbox#n<id>). Reuse an open
+  // dashboard window: send it there, then bring it to the front.
   const url = data.url || '/';
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
-      for (const w of wins) {
-        if (w.url.includes(url) && 'focus' in w) return w.focus();
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (wins) => {
+      const win = wins.find((w) => 'focus' in w);
+      if (win) {
+        try {
+          const moved = 'navigate' in win ? await win.navigate(url) : null;
+          return (moved || win).focus();
+        } catch (_e) {
+          /* navigate refused (e.g. uncontrolled window): open a new one */
+        }
       }
       return self.clients.openWindow(url);
     }),
