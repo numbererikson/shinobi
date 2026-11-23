@@ -59,3 +59,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Reuse unchanged layers (OS packages, node_modules) across releases:
+          # same digests mean servers only pull the layers that really changed.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

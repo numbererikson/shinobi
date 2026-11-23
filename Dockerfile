@@ -21,8 +21,16 @@ RUN npm ci --ignore-scripts \
 COPY tsconfig.json ./
 COPY src src
 COPY dashboard-spa dashboard-spa
-RUN npx tsc && npm run build:spa \
-  && npm prune --omit=dev
+RUN npx tsc && npm run build:spa
+
+# Production dependencies in their own stage, keyed only by the lockfile. With
+# the CI build cache this layer keeps the same digest between releases, so an
+# upgrade downloads just the new app code instead of all of node_modules.
+FROM node:22-slim AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
+  && npm rebuild better-sqlite3
 
 FROM node:22-slim
 ENV NODE_ENV=production \
@@ -38,7 +46,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-COPY --from=build /app/node_modules node_modules
+COPY --from=prod-deps /app/node_modules node_modules
 COPY --from=build /app/dist dist
 COPY package.json ./
 COPY migrations migrations
