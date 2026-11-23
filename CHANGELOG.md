@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Smaller upgrades.** The Docker image builds production dependencies in
+  their own stage, keyed by the lockfile, and the publish workflow reuses
+  the build cache. Layers that did not change (OS packages, `node_modules`)
+  keep their digests, so `docker compose pull` downloads only the new app
+  code. Slow connections no longer pull about 80 MB per release.
+
 ## [0.10.0] — 2026-11-23
 
 A morning brief pushed by the server itself, with plugin sections.
