@@ -13,6 +13,7 @@ import { projectTools } from './projects.js';
 import { recallTools } from './recall.js';
 import { allTools, appendTool, getTool, resetTools, toolNames } from './registry.js';
 import { subtaskTools } from './subtasks.js';
+import { systemTools } from './system.js';
 import type { ShinobiTool } from './types.js';
 import { workflowTools } from './workflow.js';
 
@@ -36,6 +37,7 @@ export function registerBuiltins(): void {
     ...workflowTools,
     ...approvalTools,
     ...notifyTools,
+    ...systemTools,
     ...findingsTools,
   ]) {
     appendTool(tool);

@@ -9,6 +9,12 @@ import { listLoadedPlugins } from './plugins/state.js';
  */
 
 export const DEVELOPMENT = 'development';
+/**
+ * Always-on core tools every client needs, also on /mcp/home: push
+ * notifications and the server health report. Not a switchable module.
+ */
+export const SYSTEM = 'system';
+const SYSTEM_TOOLS = new Set(['notify', 'system_status']);
 
 export interface ModuleInfo {
   id: string;
@@ -50,8 +56,9 @@ export function setModuleEnabled(id: string, enabled: boolean): void {
     .run(id, enabled ? 1 : 0);
 }
 
-/** The module a tool belongs to: the plugin that registered it, else Development. */
+/** The module a tool belongs to: System, the plugin that registered it, else Development. */
 export function moduleOfTool(toolName: string): string {
+  if (SYSTEM_TOOLS.has(toolName)) return SYSTEM;
   if (toolName.startsWith('plugin_')) {
     const owner = listLoadedPlugins().find((p) => p.tools_registered.includes(toolName));
     if (owner) return owner.name;

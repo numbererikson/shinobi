@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { cwd, stderr, stdout } from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { getPackageVersion } from '../lib/version.js';
 
 import {
   createAuthMiddleware,
@@ -157,19 +158,6 @@ function isOneOf<T extends readonly string[]>(values: T, value: unknown): value 
 const __filename = fileURLToPath(import.meta.url);
 const SPA_DIR = resolve(dirname(__filename), '..', '..', 'dist', 'dashboard-spa');
 const SPA_INDEX_PATH = resolve(SPA_DIR, 'index.html');
-
-let cachedVersion: string | null = null;
-function getPackageVersion(): string {
-  if (cachedVersion !== null) return cachedVersion;
-  try {
-    const pkgPath = resolve(dirname(__filename), '..', '..', 'package.json');
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { version?: string };
-    cachedVersion = pkg.version ?? 'unknown';
-  } catch {
-    cachedVersion = 'unknown';
-  }
-  return cachedVersion;
-}
 
 let cachedSpaIndex: string | null = null;
 function loadSpaIndex(): string | null {

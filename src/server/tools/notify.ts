@@ -50,7 +50,8 @@ export const notifyTools: ShinobiTool[] = [
       if (url !== undefined) data['url'] = url;
       const payload: PushPayload = {
         title,
-        body: body.length > 160 ? body.slice(0, 160) + '…' : body,
+        // Long enough for a short daily brief; phones expand it on long-press.
+        body: body.length > 600 ? body.slice(0, 600) + '…' : body,
         tag: `notify-${kind}`,
         data,
       };

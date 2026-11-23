@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`system_status` tool.** It is the health report for a daily brief:
+  - version, uptime, load, memory and free disk;
+  - GitHub backup health;
+  - the result of an external disk backup, read from
+    `<config dir>/status/disk-backup.json`;
+  - plugin load errors and push devices;
+  - open projects, with stalled ones flagged.
+
+  `problems` sums up what needs attention in plain sentences.
+
+### Changed
+
+- **`notify` and `system_status` form an always-on System group.** They are
+  listed on `/mcp/home` and stay available when Development is switched off,
+  so home agents can report and alert.
+- **`notify` keeps up to 600 characters** of the body (was 160), enough for a
+  short daily brief.
+
 ## [0.8.0] — 2026-11-22
 
 Plugins install from the dashboard, Compose is the recommended setup,
