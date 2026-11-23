@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-11-23
+
+A morning brief pushed by the server itself, with plugin sections.
+
 ### Added
 
 - **Morning brief.** The server pushes one short message a day:
