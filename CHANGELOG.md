@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The Docker base image is pinned by digest.** Upstream rebuilds of
+  `node:22-slim` changed every layer, so 0.11.1 was still a full pull.
+  Dependabot proposes digest bumps monthly.
+
 ## [0.11.1] — 2026-11-24
 
 ### Added

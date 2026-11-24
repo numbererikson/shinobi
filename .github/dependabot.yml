@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # Bumps the pinned node:22-slim digest in the Dockerfile (security fixes).
+  # Kept monthly: every bump makes the next upgrade a full image download.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
