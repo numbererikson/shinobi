@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Delete inbox messages:** a trash button on each message, and "Clear all"
+  with a confirmation.
+
 ## [0.11.0] — 2026-11-23
 
 Inbox for every notification, and much smaller upgrades from now on.

@@ -1,4 +1,4 @@
-import { listNotifications, markAllNotificationsRead, unreadNotificationCount } from '../models/notifications.js';
+import { deleteAllNotifications, deleteNotification, listNotifications, markAllNotificationsRead, unreadNotificationCount } from '../models/notifications.js';
 import { serve, type ServerType } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
@@ -700,6 +700,14 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
   });
 
   app.post('/api/notifications/read', (c) => c.json({ ok: true, marked: markAllNotificationsRead() }));
+
+  app.delete('/api/notifications/:id', (c) => {
+    const id = Number(c.req.param('id'));
+    if (!Number.isInteger(id)) return c.json({ ok: false, error: 'invalid id' }, 400);
+    return c.json({ ok: deleteNotification(id) });
+  });
+
+  app.delete('/api/notifications', (c) => c.json({ ok: true, deleted: deleteAllNotifications() }));
 
   // ---- Approvals ----
 
