@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { applyPendingMigrations } from '../lib/migrations.js';
 import { closeDb } from '../lib/db.js';
 import { createProject } from './projects.js';
-import { checkDeadEnds, getDeadEnd, listDeadEnds, logDeadEnd } from './dead_ends.js';
+import { checkDeadEnds, deadEndsForText, getDeadEnd, listDeadEnds, logDeadEnd, setDeadEndObsolete } from './dead_ends.js';
 
 let tmp: string;
 let projectId: number;
@@ -92,5 +92,34 @@ describe('listDeadEnds', () => {
     const list = listDeadEnds({ projectId });
     expect(list.length).toBeGreaterThan(0);
     expect(list.every((d) => d.project_id === projectId)).toBe(true);
+  });
+});
+
+describe('obsolete dead ends and free-text matching', () => {
+  it('drops obsolete ones from checks but keeps them in the list', () => {
+    const d = logDeadEnd({
+      project_id: projectId,
+      attempted_approach: 'esbuild bundling of better-sqlite3 native module',
+      failure_reason: 'native binding cannot be bundled on node 18',
+      files_involved: ['scripts/bundle.ts'],
+    });
+    expect(checkDeadEnds({ approach: 'esbuild', files: ['scripts/bundle.ts'] }).map((x) => x.id)).toContain(d.id);
+    const obs = setDeadEndObsolete(d.id, true, 'node 22 ships the binding');
+    expect(obs?.obsolete_reason).toBe('node 22 ships the binding');
+    expect(obs?.obsolete_at).toBeTruthy();
+    expect(checkDeadEnds({ approach: 'esbuild', files: ['scripts/bundle.ts'] }).map((x) => x.id)).not.toContain(d.id);
+    expect(checkDeadEnds({ approach: 'esbuild', includeObsolete: true }).map((x) => x.id)).toContain(d.id);
+    expect(listDeadEnds({ projectId }).map((x) => x.id)).toContain(d.id);
+    expect(deadEndsForText('bundle better-sqlite3 with esbuild again').map((x) => x.id)).not.toContain(d.id);
+    setDeadEndObsolete(d.id, false);
+    expect(getDeadEnd(d.id)?.obsolete_at).toBeNull();
+    expect(deadEndsForText('try bundling better-sqlite3 with esbuild again').map((x) => x.id)).toContain(d.id);
+  });
+
+  it('free text needs two shared significant words, so one common word is not enough', () => {
+    logDeadEnd({ project_id: projectId, attempted_approach: 'cloudflare tunnel with tls 1.3 minimum', failure_reason: 'anthropic egress negotiates tls 1.2 only' });
+    expect(deadEndsForText('raise the cloudflare minimum tls version').length).toBeGreaterThan(0);
+    expect(deadEndsForText('update the cloudflare dashboard colours')).toEqual([]);
+    expect(deadEndsForText('ok')).toEqual([]);
   });
 });

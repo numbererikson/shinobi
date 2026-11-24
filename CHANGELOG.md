@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Claude Code hooks for dead ends.** `POST /api/hooks/claude-code` and
+  `.claude/hooks/shinobi-dead-ends.sh` add relevant past failures to the
+  agent's context automatically:
+  - on each prompt, dead ends sharing at least two significant words with it;
+  - after an edit, dead ends recorded for that file.
+
+  The hook says nothing when nothing matches, repeats nothing within a
+  session, never blocks and stays quiet when Shinobi is down. Every warning is
+  logged as `dead_end_hook` activity for measuring.
+  See `docs/claude-code-hooks.md`. This repository uses the hooks itself.
+- **Obsolete dead ends.** The `update_dead_end` tool marks a dead end obsolete,
+  with a reason, or active again. Obsolete ones keep their history but drop
+  out of `check_dead_ends` (unless `include_obsolete`) and the hooks
+  (migration `0019_dead_end_obsolete`).
+
+### Fixed
+
+- **Approvals accept only one answer.** Two answers sent at the same moment
+  from two devices can no longer both be accepted, and an answer after
+  `expires_at` is refused as expired.
+
 ### Changed
 
 - **The Docker base image is pinned by digest.** Upstream rebuilds of

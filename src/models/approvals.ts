@@ -76,13 +76,21 @@ export function respondToApproval(id: number, input: RespondInput): Approval | n
   if (existing.status !== 'pending') {
     throw new Error(`approval ${id} already ${existing.status}; cannot respond`);
   }
-  getDb()
+  // Guarded update: of two simultaneous answers (two devices) only the first
+  // one that reaches SQLite wins; the other sees 0 changes and is refused.
+  const changed = getDb()
     .prepare(
       `UPDATE approvals
        SET status = 'responded', response_value = ?, response_note = ?, responded_by = ?, responded_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
+       WHERE id = ? AND status = 'pending'
+         AND (expires_at IS NULL OR datetime(expires_at) IS NULL OR datetime(expires_at) >= datetime('now'))`,
     )
-    .run(input.value, input.note ?? null, input.responded_by ?? null, id);
+    .run(input.value, input.note ?? null, input.responded_by ?? null, id).changes;
+  if (changed === 0) {
+    const now = getApproval(id);
+    const state = now?.status === 'pending' ? 'expired' : (now?.status ?? 'gone');
+    throw new Error(`approval ${id} already ${state}; cannot respond`);
+  }
   return getApproval(id);
 }
 

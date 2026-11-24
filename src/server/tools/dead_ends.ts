@@ -2,6 +2,7 @@ import { recordActivity } from '../../models/activity.js';
 import {
   checkDeadEnds,
   logDeadEnd,
+  setDeadEndObsolete,
   type DeadEnd,
   type DeadEndRow,
 } from '../../models/dead_ends.js';
@@ -76,6 +77,7 @@ export const deadEndTools: ShinobiTool[] = [
         project_id: { type: 'integer' },
         limit: { type: 'integer', default: 10 },
         score_threshold: { type: 'number', description: 'Semantic mode only: minimum cosine score (default 0.55)' },
+        include_obsolete: { type: 'boolean', description: 'Also return dead ends marked obsolete (default false).' },
       },
       required: ['approach'],
       additionalProperties: false,
@@ -86,6 +88,7 @@ export const deadEndTools: ShinobiTool[] = [
       const projectId = getNumber(args, 'project_id');
       const limit = getNumber(args, 'limit') ?? 10;
       const threshold = getNumber(args, 'score_threshold') ?? 0.55;
+      const includeObsolete = getBoolean(args, 'include_obsolete') === true;
 
       const provider = await resolveEmbeddingProvider();
       if (provider) {
@@ -93,7 +96,7 @@ export const deadEndTools: ShinobiTool[] = [
         if (projectId !== undefined) semanticOpts.projectId = projectId;
         const semantic = await semanticSearch<DeadEndRow>('dead_ends', approach, semanticOpts);
         const matches = semantic
-          .filter((hit) => hit.score >= threshold)
+          .filter((hit) => hit.score >= threshold && (includeObsolete || hit.row.obsolete_at === null))
           .map((hit) => ({ ...hydrate(hit.row), score: Number(hit.score.toFixed(4)) }));
         if (matches.length > 0) {
           return {
@@ -106,9 +109,10 @@ export const deadEndTools: ShinobiTool[] = [
         }
       }
 
-      const fallbackOpts: { approach: string; files?: string[]; projectId?: number; limit: number } = {
+      const fallbackOpts: { approach: string; files?: string[]; projectId?: number; limit: number; includeObsolete: boolean } = {
         approach,
         limit,
+        includeObsolete,
       };
       if (files) fallbackOpts.files = files;
       if (projectId !== undefined) fallbackOpts.projectId = projectId;
@@ -119,6 +123,39 @@ export const deadEndTools: ShinobiTool[] = [
         mode: provider ? 'semantic_fallback_fulltext' : 'fulltext',
         verdict: matches.length === 0 ? 'no_known_dead_ends' : 'matches_found',
       };
+    },
+  },
+  {
+    name: 'update_dead_end',
+    description:
+      'Mark a dead end as obsolete when it no longer applies (e.g. the dependency was upgraded or the bug fixed upstream), with the reason; ' +
+      'or make it active again. Obsolete dead ends keep their history but drop out of check_dead_ends and the Claude Code hooks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer' },
+        obsolete: { type: 'boolean', description: 'true = no longer applies; false = applies again' },
+        reason: { type: 'string', description: 'Why it no longer applies (required when obsolete is true)' },
+      },
+      required: ['id', 'obsolete'],
+      additionalProperties: false,
+    },
+    handler: (args) => {
+      const id = requireNumber(args, 'id');
+      const obsolete = getBoolean(args, 'obsolete') === true;
+      const reason = getString(args, 'reason');
+      if (obsolete && !reason?.trim()) throw new Error('reason is required when marking a dead end obsolete');
+      const updated = setDeadEndObsolete(id, obsolete, reason?.trim() ?? null);
+      if (!updated) throw new Error(`dead end ${id} not found`);
+      recordActivity({
+        project_id: updated.project_id,
+        session_id: null,
+        action_type: obsolete ? 'dead_end_obsolete' : 'dead_end_reactivated',
+        action_details: obsolete ? `#${id}: ${reason}`.slice(0, 200) : `#${id}`,
+        entity_type: 'dead_end',
+        entity_id: id,
+      });
+      return updated;
     },
   },
 ];

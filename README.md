@@ -255,14 +255,14 @@ Commands:
         [--project N] [--drain]   brain. Atomic claim → no two agents take the same task. --no-worktree / --keep-worktrees
 ```
 
-## MCP tools (41)
+## MCP tools (42)
 
 | Group | Tools |
 |---|---|
 | Projects | list_projects, get_project, create_project, update_project, archive_project, unarchive_project, delete_project |
 | Subtasks | list_tasks, get_task, create_task, bulk_create_tasks, update_subtask, delete_subtask, claim_task, complete_task, next_task |
 | Decisions | log_decision, decisions_for_file, update_decision_status |
-| Dead ends | log_dead_end, check_dead_ends |
+| Dead ends | log_dead_end, check_dead_ends, update_dead_end (+ [Claude Code hooks](docs/claude-code-hooks.md) that inject them automatically) |
 | Notes | add_note, list_notes, delete_note |
 | Plans | save_plan, get_plan |
 | Context | get_context, update_context |
