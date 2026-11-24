@@ -1,3 +1,4 @@
+import { handleClaudeCodeHook, type ClaudeCodeHookInput } from '../services/hooks/claude-code.js';
 import { deleteAllNotifications, deleteNotification, listNotifications, markAllNotificationsRead, unreadNotificationCount } from '../models/notifications.js';
 import { serve, type ServerType } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -690,6 +691,19 @@ function buildApp(auth?: AuthMiddlewareOptions, opts?: { mcp?: boolean }): Hono 
     } catch (err) {
       return c.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
     }
+  });
+
+  // ---- Claude Code hooks: past failures injected without the agent asking ----
+
+  app.post('/api/hooks/claude-code', async (c) => {
+    let input: unknown;
+    try {
+      input = await c.req.json();
+    } catch {
+      return c.body(null, 204);
+    }
+    const out = input && typeof input === 'object' ? handleClaudeCodeHook(input as ClaudeCodeHookInput) : null;
+    return out ? c.json(out) : c.body(null, 204);
   });
 
   // ---- Inbox: every push the server sent ----

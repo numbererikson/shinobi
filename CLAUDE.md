@@ -23,7 +23,9 @@ This project is developed *through* Shinobi. If the Shinobi MCP tools
   Launch v2"**.
 - **Before implementing** a non-trivial approach, call `check_dead_ends` — we
   log failures so they aren't repeated. This is the product's core idea; honor
-  it while building the product.
+  it while building the product. The repo's `.claude/settings.json` hooks also
+  inject related dead ends automatically (docs/claude-code-hooks.md); mark one
+  that no longer applies with `update_dead_end`.
 - **Record** durable decisions with `log_decision` and failures with
   `log_dead_end` as you go.
 - **End** with `session_closeout` (summary, changed files, completed tasks).
