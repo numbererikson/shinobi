@@ -33,6 +33,14 @@ export function unreadNotificationCount(): number {
   return (getDb().prepare('SELECT COUNT(*) AS n FROM notifications WHERE read_at IS NULL').get() as { n: number }).n;
 }
 
+export function deleteNotification(id: number): boolean {
+  return getDb().prepare('DELETE FROM notifications WHERE id = ?').run(id).changes > 0;
+}
+
+export function deleteAllNotifications(): number {
+  return getDb().prepare('DELETE FROM notifications').run().changes;
+}
+
 export function markAllNotificationsRead(): number {
   return getDb().prepare("UPDATE notifications SET read_at = datetime('now') WHERE read_at IS NULL").run().changes;
 }

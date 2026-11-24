@@ -188,6 +188,14 @@ export function listNotifications(): Promise<{ notifications: InboxNotification[
   return jsonFetch('/api/notifications');
 }
 
+export function deleteNotification(id: number): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/notifications/${id}`, { method: 'DELETE' });
+}
+
+export function clearNotifications(): Promise<{ ok: boolean; deleted: number }> {
+  return jsonFetch('/api/notifications', { method: 'DELETE' });
+}
+
 export function markNotificationsRead(): Promise<{ ok: boolean; marked: number }> {
   return jsonFetch('/api/notifications/read', { method: 'POST', body: '{}' });
 }

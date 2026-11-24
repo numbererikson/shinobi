@@ -5,7 +5,14 @@ import { join } from 'node:path';
 
 import { applyPendingMigrations } from '../lib/migrations.js';
 import { closeDb } from '../lib/db.js';
-import { listNotifications, markAllNotificationsRead, recordNotification, unreadNotificationCount } from './notifications.js';
+import {
+  deleteAllNotifications,
+  deleteNotification,
+  listNotifications,
+  markAllNotificationsRead,
+  recordNotification,
+  unreadNotificationCount,
+} from './notifications.js';
 import { inboxUrl } from '../services/push/web-push.js';
 
 let tmp: string;
@@ -32,6 +39,15 @@ describe('inbox', () => {
     expect(markAllNotificationsRead()).toBe(2);
     expect(unreadNotificationCount()).toBe(0);
     expect(inboxUrl(b)).toBe(`/inbox#n${b}`);
+  });
+
+  it('deletes one message or all of them', () => {
+    const id = recordNotification({ title: 'Poruka', body: 'Jel trebam kupit mlijeko?' });
+    expect(deleteNotification(id)).toBe(true);
+    expect(deleteNotification(id)).toBe(false);
+    expect(listNotifications().some((n) => n.id === id)).toBe(false);
+    expect(deleteAllNotifications()).toBeGreaterThan(0);
+    expect(listNotifications()).toEqual([]);
   });
 
   it('keeps only the last 500', () => {
