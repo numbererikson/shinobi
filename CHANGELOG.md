@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-11-24
+
+Dead ends reach the agent without it asking, can be retired with a reason, and the Docker base is pinned.
+
 ### Added
 
 - **Claude Code hooks for dead ends.** `POST /api/hooks/claude-code` and
