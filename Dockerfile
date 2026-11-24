@@ -12,7 +12,7 @@
 # Upstream rebuilds node:22-slim often; an unpinned tag changes every layer of
 # our image and turns each upgrade into a full ~120 MB pull. Dependabot
 # proposes digest bumps (security fixes) as their own PRs.
-FROM node:22-slim@sha256:66cb8ef75184df13dc0dcf866330488996b485d404db60555756865300ced4a5 AS build
+FROM node:25-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370 AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -30,13 +30,13 @@ RUN npx tsc && npm run build:spa
 # Production dependencies in their own stage, keyed only by the lockfile. With
 # the CI build cache this layer keeps the same digest between releases, so an
 # upgrade downloads just the new app code instead of all of node_modules.
-FROM node:22-slim@sha256:66cb8ef75184df13dc0dcf866330488996b485d404db60555756865300ced4a5 AS prod-deps
+FROM node:25-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370 AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
   && npm rebuild better-sqlite3
 
-FROM node:22-slim@sha256:66cb8ef75184df13dc0dcf866330488996b485d404db60555756865300ced4a5
+FROM node:25-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370
 ENV NODE_ENV=production \
     SHINOBI_CONFIG_DIR=/data \
     SHINOBI_DB_PATH=/data/shinobi.db \
