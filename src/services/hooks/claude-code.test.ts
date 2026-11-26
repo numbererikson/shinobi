@@ -31,7 +31,7 @@ beforeAll(() => {
     project_id: p.id,
     attempted_approach: 'custom authorization header on the claude connector',
     failure_reason: 'the connector could not connect; a token in the url worked',
-    files_involved: ['adguard/README.md', 'README.md'],
+    files_involved: ['adguard/SETUP.md', 'SETUP.md'],
   }).id;
 });
 
@@ -96,9 +96,9 @@ describe('Claude Code hooks', () => {
   it('a bare file name on a dead end does not match the same name in another folder', () => {
     const edit = (session: string, file: string) =>
       handleClaudeCodeHook({ hook_event_name: 'PostToolUse', session_id: session, cwd: '/home/me/repo', tool_name: 'Write', tool_input: { file_path: `/home/me/repo/${file}` } });
-    expect(edit('s10', 'minecraft/README.md')).toBeNull();
-    expect(edit('s11', 'README.md')?.hookSpecificOutput.additionalContext).toContain(`#${readmeId}`);
-    expect(edit('s12', 'adguard/README.md')?.hookSpecificOutput.additionalContext).toContain(`#${readmeId}`);
+    expect(edit('s10', 'minecraft/SETUP.md')).toBeNull();
+    expect(edit('s11', 'SETUP.md')?.hookSpecificOutput.additionalContext).toContain(`#${readmeId}`);
+    expect(edit('s12', 'adguard/SETUP.md')?.hookSpecificOutput.additionalContext).toContain(`#${readmeId}`);
   });
 
   it('HTTP endpoint: needs auth, answers 204 when there is nothing to add', async () => {
