@@ -183,10 +183,25 @@ export function checkDeadEnds(input: CheckDeadEndsInput): DeadEnd[] {
 const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 /**
+ * Whether a prompt word appears as a word of the dead end: the same word, or
+ * the same 5+ letter stem with a short ending (`serveru` ~ `server`), so
+ * Croatian inflections still count but a short word inside a longer one
+ * (`rade` in `upgrade`) does not.
+ */
+function wordMatches(token: string, words: Set<string>): boolean {
+  if (words.has(token)) return true;
+  if (token.length < 5) return false;
+  const stem = token.slice(0, 5);
+  for (const w of words) if (w.length >= 5 && w.startsWith(stem) && Math.abs(w.length - token.length) <= 3) return true;
+  return false;
+}
+
+/**
  * Active dead ends relevant to a free-text task description (e.g. the user's
  * prompt). Full-text ranks ANY significant word, then keeps only rows sharing
- * at least `minShared` distinct words with the text, so one common word does
- * not drag in unrelated failures.
+ * enough distinct words with the text: at least `minShared` (default 2), and
+ * one in five of the prompt's significant words for longer prompts, so a
+ * couple of common words do not drag in unrelated failures.
  */
 export function deadEndsForText(text: string, options: { limit?: number; minShared?: number; projectId?: number } = {}): DeadEnd[] {
   const tokens = significantTokens(text);
@@ -209,10 +224,11 @@ export function deadEndsForText(text: string, options: { limit?: number; minShar
     )
     .all(...params);
   const folded = tokens.map(fold);
+  const needed = Math.max(minShared, Math.min(folded.length, Math.ceil(folded.length / 5)));
   return rows
     .filter((row) => {
-      const hay = fold(`${row.attempted_approach} ${row.failure_reason}`);
-      return folded.filter((t) => hay.includes(t)).length >= minShared;
+      const words = new Set(fold(`${row.attempted_approach} ${row.failure_reason}`).split(/[^\p{L}\p{N}_]+/u).filter(Boolean));
+      return folded.filter((t) => wordMatches(t, words)).length >= needed;
     })
     .slice(0, options.limit ?? 3)
     .map(hydrate);
