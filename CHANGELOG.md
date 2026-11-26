@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Dead-end hook: fewer unrelated warnings.
+  - Notification text the harness injects into a prompt is ignored.
+  - Words must match whole, or with a short ending (`serveru` matches `server`), instead of anywhere inside a longer word.
+  - Longer prompts need more words in common.
+  - A bare file name stored on a dead end no longer matches the same name in every folder.
+
 ## [0.12.0] — 2026-11-24
 
 Dead ends reach the agent without it asking, can be retired with a reason, and the Docker base is pinned.

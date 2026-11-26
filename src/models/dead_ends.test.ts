@@ -122,4 +122,18 @@ describe('obsolete dead ends and free-text matching', () => {
     expect(deadEndsForText('update the cloudflare dashboard colours')).toEqual([]);
     expect(deadEndsForText('ok')).toEqual([]);
   });
+
+  it('free text matches whole words and short inflections, not fragments, and longer prompts need more overlap', () => {
+    const d = logDeadEnd({
+      project_id: projectId,
+      attempted_approach: 'raising the cloudflare minimum tls to 1.3',
+      failure_reason: 'the egress gateway negotiates 1.2 so every upgrade attempt broke the shinobi server',
+    });
+    const ids = (t: string) => deadEndsForText(t).map((x) => x.id);
+    expect(ids('podigni cloudflare minimum na serveru')).toContain(d.id); // serveru ~ server
+    expect(ids('rade grade na nasem serveru')).not.toContain(d.id); // "rade" is only inside "upgrade"
+    expect(
+      ids('besplatni dodaci curseforge rade na nasem serveru mogu instalirati dinosauri auti luka bira gateway'),
+    ).not.toContain(d.id); // 2 of 12 words is not enough for a long prompt
+  });
 });

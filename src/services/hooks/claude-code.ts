@@ -46,6 +46,31 @@ export function resetHookMemory(): void {
   seen.clear();
 }
 
+/**
+ * What the user actually typed: automated text the harness injects into the
+ * prompt (system reminders, background-task and PR notifications) is dropped,
+ * because its boilerplate matches unrelated dead ends.
+ */
+export function userText(prompt: string): string {
+  if (/\[SYSTEM NOTIFICATION\b/.test(prompt)) return '';
+  return prompt
+    .replace(/<(system-reminder|task-notification|wake|event)\b[^>]*>[\s\S]*?<\/\1>/g, ' ')
+    .replace(/<\/?[a-z][\w-]*(?:\s[^>]*)?>/gi, ' ')
+    .trim();
+}
+
+/**
+ * Stricter than filePathsMatch: a bare file name stored on a dead end
+ * (`README.md`) only matches that exact path, not every README in every folder.
+ */
+function sameFile(stored: string, file: string): boolean {
+  const a = normalizeFilePath(stored).toLowerCase();
+  const b = file.toLowerCase();
+  if (a === b) return true;
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  return shorter.includes('/') && longer.endsWith(`/${shorter}`);
+}
+
 function relativeTo(cwd: string | undefined, file: string): string {
   if (cwd && file.startsWith(cwd.endsWith('/') ? cwd : `${cwd}/`)) return file.slice(cwd.length).replace(/^\/+/, '');
   return file;
@@ -71,16 +96,21 @@ export function handleClaudeCodeHook(input: ClaudeCodeHookInput): ClaudeCodeHook
   let intro = '';
   let subject = '';
 
-  if (event === 'UserPromptSubmit' && typeof input.prompt === 'string' && input.prompt.trim()) {
-    items = deadEndsForText(input.prompt).filter((d) => firstTime(`${session}:${d.id}`));
+  if (event === 'UserPromptSubmit' && typeof input.prompt === 'string') {
+    const text = userText(input.prompt);
+    if (!text) return null;
+    items = deadEndsForText(text).filter((d) => firstTime(`${session}:${d.id}`));
     intro = 'past failures that look related to this task:';
-    subject = input.prompt.slice(0, 120);
+    subject = text.slice(0, 120);
   } else if (event === 'PostToolUse' && EDIT_TOOLS.has(input.tool_name ?? '')) {
     const raw = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
     if (!raw) return null;
     const file = normalizeFilePath(relativeTo(input.cwd, raw));
     if (!file || !firstTime(`${session}:file:${file}`)) return null;
-    items = checkDeadEnds({ approach: '', files: [file], limit: 3 }).filter((d) => firstTime(`${session}:${d.id}`));
+    items = checkDeadEnds({ approach: '', files: [file], limit: 10 })
+      .filter((d) => d.files_involved?.some((stored) => sameFile(stored, file)))
+      .slice(0, 3)
+      .filter((d) => firstTime(`${session}:${d.id}`));
     intro = `past failures recorded for ${file}:`;
     subject = file;
   } else {

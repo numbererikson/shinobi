@@ -5,8 +5,8 @@ hooks, Shinobi adds past failures to the agent's context automatically:
 
 | When | What the agent gets |
 | --- | --- |
-| You send a prompt (`UserPromptSubmit`) | Dead ends that share at least two significant words with the prompt |
-| The agent edits a file (`PostToolUse` on Edit/Write/MultiEdit/NotebookEdit) | Dead ends recorded for that file |
+| You send a prompt (`UserPromptSubmit`) | Dead ends that share at least two significant words with the prompt, and one in five of its words for longer prompts. Whole words count, plus short endings such as `serveru` for `server`. Text the harness injects (system reminders, task and PR notifications) is ignored. |
+| The agent edits a file (`PostToolUse` on Edit/Write/MultiEdit/NotebookEdit) | Dead ends recorded for that file. A bare name such as `README.md` on a dead end matches only that path, not every README |
 
 Behaviour:
 - **Silent by default.** Nothing is added when nothing matches.
