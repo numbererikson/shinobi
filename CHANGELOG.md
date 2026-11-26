@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-11-26
+
+The dead-end hook stays quiet when nothing relevant matches.
+
 ### Fixed
 
 - Dead-end hook: fewer unrelated warnings.
