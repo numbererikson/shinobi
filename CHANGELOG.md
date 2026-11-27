@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-11-27
+
+Plugin pages can show animated drawings, collect a whole form at once, and
+pick their own colour theme.
+
 ### Added
 
 - **Plugin pages: `figure` block.** A plugin can show an SVG drawing or
