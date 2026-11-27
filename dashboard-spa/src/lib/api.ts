@@ -416,7 +416,27 @@ export type PluginBlock =
   | { type: 'actions'; buttons: PluginButton[] }
   | { type: 'input'; label?: string; placeholder?: string; button: string; tool: string; arg: string; args?: Record<string, unknown>; maxLength: number }
   | { type: 'chart'; kind: 'line' | 'bar'; labels: string[]; series: { name: string; values: (number | null)[] }[]; title?: string; unit?: string }
+  | { type: 'figure'; svg: string; alt: string; title?: string; caption?: string; bullets?: string[]; size: 'sm' | 'md' | 'lg'; collapsed?: boolean }
+  | { type: 'form'; tool: string; button: string; title?: string; args?: Record<string, unknown>; fields: PluginFormField[] }
   | { type: 'divider' };
+
+export interface PluginFormField {
+  name: string;
+  label: string;
+  kind: 'text' | 'textarea' | 'number' | 'select' | 'slider' | 'toggle';
+  value?: string | number | boolean;
+  placeholder?: string;
+  hint?: string;
+  unit?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  maxLength?: number;
+  required?: boolean;
+  options?: { value: string; label: string }[];
+}
+
+export type PluginPageTheme = 'default' | 'hologram';
 
 export interface PluginPageSummary {
   id: string;
@@ -426,6 +446,7 @@ export interface PluginPageSummary {
 }
 
 export interface PluginPage extends PluginPageSummary {
+  theme: PluginPageTheme;
   blocks: PluginBlock[];
   refreshSeconds: number | null;
   error: string | null;
