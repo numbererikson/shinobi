@@ -100,22 +100,22 @@ export function PluginChart({ block }: { block: ChartBlock }) {
         <svg width={width} height={HEIGHT} role="img" aria-label={block.title ?? series.map((s) => s.name).join(', ')} className="block">
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={M.left} x2={width - M.right} y1={y(t)} y2={y(t)} stroke="#2a313c" strokeWidth={1} />
-              <text x={M.left - 6} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="#6b7785">
+              <line x1={M.left} x2={width - M.right} y1={y(t)} y2={y(t)} className="stroke-border" strokeWidth={1} />
+              <text x={M.left - 6} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} className="fill-text-muted">
                 {fmt(t)}
               </text>
             </g>
           ))}
           {labels.map((l, i) =>
             i % labelEvery === 0 ? (
-              <text key={i} x={xCenter(i)} y={HEIGHT - 6} textAnchor="middle" fontSize={11} fill="#6b7785">
+              <text key={i} x={xCenter(i)} y={HEIGHT - 6} textAnchor="middle" fontSize={11} className="fill-text-muted">
                 {l.length > 12 ? `${l.slice(0, 11)}…` : l}
               </text>
             ) : null,
           )}
 
           {hover !== null && kind === 'line' && (
-            <line x1={xCenter(hover)} x2={xCenter(hover)} y1={M.top} y2={M.top + plotH} stroke="#4c566a" strokeWidth={1} />
+            <line x1={xCenter(hover)} x2={xCenter(hover)} y1={M.top} y2={M.top + plotH} className="stroke-text-dim" strokeWidth={1} />
           )}
 
           {kind === 'bar'
@@ -152,7 +152,7 @@ export function PluginChart({ block }: { block: ChartBlock }) {
                       <circle key={i} cx={xCenter(i)} cy={y(s.values[i] as number)} r={3} fill={SERIES[si]} />
                     ))}
                     {hover !== null && s.values[hover] !== null && (
-                      <circle cx={xCenter(hover)} cy={y(s.values[hover] as number)} r={4} fill={SERIES[si]} stroke="#161b22" strokeWidth={2} />
+                      <circle cx={xCenter(hover)} cy={y(s.values[hover] as number)} r={4} fill={SERIES[si]} className="stroke-panel" strokeWidth={2} />
                     )}
                   </g>
                 );

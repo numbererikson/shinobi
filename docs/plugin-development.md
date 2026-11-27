@@ -134,8 +134,9 @@ export default function register(registry) {
     registry.registerPage({
       id: 'music',            // /apps/music — lowercase, digits, dashes; unique across plugins
       title: 'Music',
-      icon: 'music',          // music | shield | dumbbell | home | chart | list | package
+      icon: 'music',          // music | shield | dumbbell | swords | home | chart | list | package
       order: 10,              // sidebar position (lower first), optional
+      theme: 'default',       // optional colour preset for this page: default | hologram (0.13.0+)
       render: async () => ({
         refreshSeconds: 5,    // optional auto-refresh while the page is open (min 2)
         blocks: [
@@ -163,10 +164,41 @@ export default function register(registry) {
 | `actions` | `buttons: [{ label, tool, args?, confirm?, variant? }]` |
 | `input` | `tool`, `arg`, `button`, `label?`, `placeholder?`, `args?`, `maxLength?` (≤ 2000, default 500): a text field whose submit calls `tool` with `{ ...args, [arg]: <typed text> }` |
 | `chart` | `labels: string[]` (≤ 90), `series: [{ name, values }]` (≤ 4; one number per label, `null` = gap), `kind?` (`line` default, or `bar`), `title?`, `unit?` |
+| `figure` | `svg` (a complete `<svg>…</svg>` document, ≤ 100 kB), `alt?`, `title?`, `caption?`, `bullets?: string[]` (≤ 8), `size?` (`sm`, `md` default, `lg`), `collapsed?` (needs `title`; click to open) — 0.13.0+ |
+| `form` | `tool`, `fields` (≤ 30), `button?` (default `Save`), `title?`, `args?`: one submit calls `tool` with `{ ...args, <name>: <value>, … }` — 0.13.0+ |
 | `divider` | — |
 
 `tone` is one of `default`, `muted`, `ok`, `warn`, `error`. Button `variant`
 is `default`, `primary` or `danger`. A button with `confirm` asks first.
+
+**Figures.** The SVG is drawn as an image (`<img>` from a data URI), so CSS or
+SMIL animation inside it plays, but nothing in it can run script or load a
+resource. Make it self-contained: no `<script>`, event handlers
+(`onload=`…), `<foreignObject>`, `<image>`, or `href`/`url()` pointing outside
+the document (`#id` references are fine). A figure that breaks these rules is
+dropped, not repaired. The `xmlns` attribute is added if missing. Respect
+`@media (prefers-reduced-motion: reduce)` inside the SVG if it animates.
+
+**Form fields.** Each field is `{ name, label, kind, value?, placeholder?, hint?, required? }`
+plus, per kind:
+
+| `kind` | Extra fields | Sent as |
+| --- | --- | --- |
+| `text`, `textarea` | `maxLength?` (≤ 2000) | string (trimmed) |
+| `number` | `min?`, `max?`, `step?`, `unit?` | number |
+| `slider` | `min?` (0), `max?` (10), `step?`, `unit?` | number |
+| `select` | `options: [{ value, label }]` or plain strings | string |
+| `toggle` | `placeholder?` (the checkbox text) | boolean |
+
+`name` must be a plain identifier and unique in the form. Empty optional
+fields are left out of the call; the submit button stays disabled while a
+`required` field is empty. Validate the values in the tool anyway — the form
+is a convenience, not a guarantee. `value` sets the initial value; when a
+re-render sends different values the form shows them.
+
+**Themes.** `theme: 'hologram'` switches that page to a dark blue palette with
+glowing cards, headings and progress bars. Unknown names fall back to
+`default`.
 
 **Rules the host enforces:**
 - Everything is plain text, with lengths and counts capped. Unknown block types

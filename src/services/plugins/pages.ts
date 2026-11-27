@@ -23,7 +23,34 @@ export type PluginBlock =
   | { type: 'actions'; buttons: PluginButton[] }
   | { type: 'input'; label?: string; placeholder?: string; button: string; tool: string; arg: string; args?: Record<string, unknown>; maxLength: number }
   | { type: 'chart'; kind: 'line' | 'bar'; labels: string[]; series: { name: string; values: (number | null)[] }[]; title?: string; unit?: string }
+  | { type: 'figure'; svg: string; alt: string; title?: string; caption?: string; bullets?: string[]; size: FigureSize; collapsed?: boolean }
+  | { type: 'form'; tool: string; button: string; title?: string; args?: Record<string, unknown>; fields: FormField[] }
   | { type: 'divider' };
+
+export type FigureSize = 'sm' | 'md' | 'lg';
+
+/** Named colour presets a page may opt into. Plugins pick one; they never ship CSS. */
+export type PageTheme = 'default' | 'hologram';
+
+export type FormFieldKind = 'text' | 'textarea' | 'number' | 'select' | 'slider' | 'toggle';
+
+export interface FormField {
+  /** Key in the args object the tool receives. */
+  name: string;
+  label: string;
+  kind: FormFieldKind;
+  /** Initial value: string for text/textarea/select, number for number/slider, boolean for toggle. */
+  value?: string | number | boolean;
+  placeholder?: string;
+  hint?: string;
+  unit?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  maxLength?: number;
+  required?: boolean;
+  options?: { value: string; label: string }[];
+}
 
 export interface PluginButton {
   label: string;
@@ -49,6 +76,8 @@ export interface PluginPageDef {
   icon?: string;
   /** Optional sort key for the sidebar (lower first). */
   order?: number;
+  /** Optional colour preset for this page only (default | hologram). */
+  theme?: PageTheme;
   render: () => unknown[] | PluginPageRender | Promise<unknown[] | PluginPageRender>;
 }
 
@@ -60,13 +89,41 @@ export interface PluginPageSummary {
 }
 
 export interface RenderedPluginPage extends PluginPageSummary {
+  theme: PageTheme;
   blocks: PluginBlock[];
   refreshSeconds: number | null;
   error: string | null;
 }
 
 const PAGE_ID = /^[a-z][a-z0-9-]{0,39}$/;
-const ICONS = new Set(['music', 'shield', 'dumbbell', 'home', 'chart', 'list', 'package']);
+const ICONS = new Set(['music', 'shield', 'dumbbell', 'swords', 'home', 'chart', 'list', 'package']);
+const THEMES = new Set<PageTheme>(['default', 'hologram']);
+const FIGURE_SIZES = new Set<FigureSize>(['sm', 'md', 'lg']);
+const FIELD_KINDS = new Set<FormFieldKind>(['text', 'textarea', 'number', 'select', 'slider', 'toggle']);
+const MAX_SVG = 100_000;
+const MAX_FORM_FIELDS = 30;
+const MAX_FIELD_OPTIONS = 50;
+/**
+ * SVG constructs refused outright. Figures are drawn through <img>, where the
+ * browser never runs script or loads external resources, so this list is
+ * defence in depth: a figure that needs any of these is dropped, not repaired.
+ */
+const SVG_FORBIDDEN = [
+  /<script/i,
+  /<foreignObject/i,
+  /<iframe/i,
+  /<object/i,
+  /<embed/i,
+  /<image/i,
+  /<!ENTITY/i,
+  /<!DOCTYPE/i,
+  /\son[a-z]+\s*=/i,
+  /javascript:/i,
+  /@import/i,
+  // Only same-document references (#id) may be linked or used as paint.
+  /\bhref\s*=\s*(?:"(?!#)|'(?!#)|(?!["'#\s]))/i,
+  /url\(\s*(?:"(?!#)|'(?!#)|(?!["'#\s]))/i,
+];
 const RENDER_TIMEOUT_MS = 10_000;
 const MAX_BLOCKS = 100;
 const MAX_ROWS = 500;
@@ -142,6 +199,90 @@ function tone(v: unknown): Tone | undefined {
 function num(v: unknown): number {
   const n = typeof v === 'number' ? v : Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+/** A standalone SVG document safe to draw as an image, or null. */
+export function sanitizeSvg(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  let svg = raw.trim();
+  if (svg.length === 0 || svg.length > MAX_SVG) return null;
+  if (!/^<svg[\s>]/i.test(svg) || !/<\/svg>$/i.test(svg)) return null;
+  if (SVG_FORBIDDEN.some((re) => re.test(svg))) return null;
+  // A data-URI image renders only with the SVG namespace declared.
+  if (!/^<svg[^>]*\sxmlns\s*=/i.test(svg)) svg = svg.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+  return svg;
+}
+
+function optNum(v: unknown): number | undefined {
+  if (v === undefined || v === null || v === '') return undefined;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function sanitizeField(raw: unknown): FormField | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const f = raw as Record<string, unknown>;
+  if (typeof f.name !== 'string' || !ARG_NAME.test(f.name)) return null;
+  const kind: FormFieldKind = typeof f.kind === 'string' && FIELD_KINDS.has(f.kind as FormFieldKind) ? (f.kind as FormFieldKind) : 'text';
+  const field: FormField = { name: f.name, label: str(f.label, 120) || f.name, kind };
+  for (const key of ['placeholder', 'hint'] as const) {
+    const v = optStr(f[key], 200);
+    if (v) field[key] = v;
+  }
+  const unit = optStr(f.unit, 20);
+  if (unit) field.unit = unit;
+  if (f.required === true) field.required = true;
+
+  switch (kind) {
+    case 'text':
+    case 'textarea': {
+      field.maxLength = Math.min(Math.max(Math.round(num(f.maxLength)) || (kind === 'text' ? 200 : 1000), 1), MAX_TEXT);
+      const v = optStr(f.value, field.maxLength);
+      if (v !== undefined) field.value = v;
+      break;
+    }
+    case 'number':
+    case 'slider': {
+      let min = optNum(f.min);
+      let max = optNum(f.max);
+      if (kind === 'slider') {
+        min ??= 0;
+        max ??= 10;
+      }
+      if (min !== undefined && max !== undefined && min > max) [min, max] = [max, min];
+      if (min !== undefined) field.min = min;
+      if (max !== undefined) field.max = max;
+      const step = optNum(f.step);
+      if (step !== undefined && step > 0) field.step = step;
+      let v = optNum(f.value);
+      if (v !== undefined) {
+        if (min !== undefined) v = Math.max(v, min);
+        if (max !== undefined) v = Math.min(v, max);
+        field.value = v;
+      }
+      break;
+    }
+    case 'select': {
+      const options = (Array.isArray(f.options) ? f.options : []).slice(0, MAX_FIELD_OPTIONS).flatMap((o) => {
+        if (o && typeof o === 'object') {
+          const opt = o as Record<string, unknown>;
+          const value = str(opt.value, 80);
+          return value ? [{ value, label: str(opt.label, 120) || value }] : [];
+        }
+        const value = str(o, 80);
+        return value ? [{ value, label: value }] : [];
+      });
+      if (options.length === 0) return null;
+      field.options = options;
+      const v = optStr(f.value, 80);
+      if (v !== undefined && options.some((o) => o.value === v)) field.value = v;
+      break;
+    }
+    case 'toggle':
+      field.value = f.value === true;
+      break;
+  }
+  return field;
 }
 
 function sanitizeButton(raw: unknown, plugin: string): PluginButton | null {
@@ -282,6 +423,40 @@ export function sanitizeBlocks(raw: unknown, plugin: string): PluginBlock[] {
         out.push(block);
         break;
       }
+      case 'figure': {
+        const svg = sanitizeSvg(b.svg);
+        if (!svg) break;
+        const title = optStr(b.title, 120);
+        const size = typeof b.size === 'string' && FIGURE_SIZES.has(b.size as FigureSize) ? (b.size as FigureSize) : 'md';
+        const block: Extract<PluginBlock, { type: 'figure' }> = { type: 'figure', svg, alt: str(b.alt, 200) || title || 'Figure', size };
+        if (title) block.title = title;
+        const caption = optStr(b.caption, 600);
+        if (caption) block.caption = caption;
+        const bullets = (Array.isArray(b.bullets) ? b.bullets : []).slice(0, 8).map((x) => str(x, 240)).filter((x) => x.length > 0);
+        if (bullets.length) block.bullets = bullets;
+        // Collapsing needs a title to click on.
+        if (b.collapsed === true && title) block.collapsed = true;
+        out.push(block);
+        break;
+      }
+      case 'form': {
+        // Several fields + one submit: calls `tool` with { ...args, <name>: <value>, … }.
+        if (typeof b.tool !== 'string' || !ownsTool(plugin, b.tool)) break;
+        const seen = new Set<string>();
+        const fields = (Array.isArray(b.fields) ? b.fields : []).slice(0, MAX_FORM_FIELDS).flatMap((x) => {
+          const field = sanitizeField(x);
+          if (!field || seen.has(field.name)) return [];
+          seen.add(field.name);
+          return [field];
+        });
+        if (fields.length === 0) break;
+        const block: Extract<PluginBlock, { type: 'form' }> = { type: 'form', tool: b.tool, button: str(b.button, 40) || 'Save', fields };
+        const title = optStr(b.title, 120);
+        if (title) block.title = title;
+        if (b.args && typeof b.args === 'object' && !Array.isArray(b.args)) block.args = b.args as Record<string, unknown>;
+        out.push(block);
+        break;
+      }
       case 'divider':
         out.push({ type: 'divider' });
         break;
@@ -301,7 +476,8 @@ function ownsTool(plugin: string, tool: string): boolean {
 export async function renderPluginPage(id: string): Promise<RenderedPluginPage | null> {
   const page = pages.get(id);
   if (!page || !isModuleEnabled(page.plugin)) return null;
-  const base = summary(page);
+  const theme: PageTheme = page.def.theme && THEMES.has(page.def.theme) ? page.def.theme : 'default';
+  const base = { ...summary(page), theme };
   try {
     const result = await withTimeout(Promise.resolve().then(() => page.def.render()), RENDER_TIMEOUT_MS, `page '${id}'`);
     const rawBlocks = Array.isArray(result) ? result : (result as PluginPageRender | null)?.blocks;

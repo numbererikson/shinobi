@@ -9,6 +9,7 @@ import {
   resetPluginPages,
   runPluginPageAction,
   sanitizeBlocks,
+  sanitizeSvg,
 } from './pages.js';
 
 function plugin(name: string, tools: Record<string, (args: Record<string, unknown>) => unknown> = {}): void {
@@ -163,6 +164,113 @@ describe('input block', () => {
   });
 });
 
+
+describe('figure block', () => {
+  const svg = '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="url(#g)"/><use href="#a"/></svg>';
+
+  it('keeps a self-contained SVG, adds the namespace, caps the text and defaults the size', () => {
+    const [fig] = sanitizeBlocks(
+      [{ type: 'figure', svg: `  ${svg}  `, title: 'Squat', caption: 'Sit back.', bullets: ['Chest up', '', 'x'.repeat(500)], size: 'huge', collapsed: true }],
+      'user/m',
+    );
+    expect(fig).toMatchObject({ type: 'figure', alt: 'Squat', title: 'Squat', caption: 'Sit back.', size: 'md', collapsed: true });
+    const f = fig as { svg: string; bullets: string[] };
+    expect(f.svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox')).toBe(true);
+    expect(f.bullets).toHaveLength(2);
+    expect(f.bullets[1]!.length).toBeLessThanOrEqual(240);
+  });
+
+  it('keeps an existing namespace and drops collapsed without a title', () => {
+    const [fig] = sanitizeBlocks([{ type: 'figure', svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', alt: 'Dot', size: 'lg', collapsed: true }], 'user/m');
+    expect(fig).toEqual({ type: 'figure', svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', alt: 'Dot', size: 'lg' });
+  });
+
+  it.each([
+    ['script', '<svg><script>alert(1)</script></svg>'],
+    ['event handler', '<svg><rect onload="x()"/></svg>'],
+    ['foreignObject', '<svg><foreignObject><div/></foreignObject></svg>'],
+    ['external href', '<svg><use href="https://evil.example/x.svg#a"/></svg>'],
+    ['external xlink', "<svg><a xlink:href='javascript:x'/></svg>"],
+    ['external image', '<svg><image href="#a"/></svg>'],
+    ['remote paint', '<svg><rect fill="url(https://evil.example/p)"/></svg>'],
+    ['css import', '<svg><style>@import "x.css";</style></svg>'],
+    ['entity', '<!DOCTYPE svg [<!ENTITY x "y">]><svg></svg>'],
+    ['not svg', '<div></div>'],
+    ['unterminated', '<svg>'],
+    ['too big', `<svg>${'a'.repeat(100_001)}</svg>`],
+    ['not a string', 42],
+  ])('drops a figure with %s', (_label, bad) => {
+    expect(sanitizeBlocks([{ type: 'figure', svg: bad, alt: 'x' }], 'user/m')).toEqual([]);
+  });
+
+  it('exposes the SVG check for plugins and tests', () => {
+    expect(sanitizeSvg(svg)).toContain('xmlns=');
+    expect(sanitizeSvg('<svg><use href = "#ok"/></svg>')).not.toBeNull();
+    expect(sanitizeSvg('<svg><use href=x.svg /></svg>')).toBeNull();
+  });
+});
+
+describe('form block', () => {
+  it('keeps typed fields bound to an own tool and normalises their values', () => {
+    plugin('user/f', { plugin_f_profile: () => 'ok' });
+    plugin('user/x', { plugin_x_wipe: () => 'gone' });
+    const blocks = sanitizeBlocks(
+      [
+        {
+          type: 'form',
+          title: 'Profile',
+          tool: 'plugin_f_profile',
+          args: { source: 'page' },
+          fields: [
+            { name: 'weight', label: 'Weight', kind: 'number', unit: 'kg', min: 30, max: 250, step: 0.1, value: 300, required: true },
+            { name: 'pain', label: 'Shoulder pain', kind: 'slider', value: 14 },
+            { name: 'level', label: 'Level', kind: 'select', options: ['beginner', { value: 'pro', label: 'Pro' }, ''], value: 'nope' },
+            { name: 'notes', label: 'Notes', kind: 'textarea', value: 'n'.repeat(5000), maxLength: 99999 },
+            { name: 'tower', label: 'Power tower', kind: 'toggle', value: 'yes' },
+            { name: 'nick', kind: 'mystery' },
+            { name: 'weight', label: 'Duplicate', kind: 'text' },
+            { name: 'bad name!', label: 'Bad', kind: 'text' },
+            { name: 'empty', label: 'No options', kind: 'select', options: [] },
+          ],
+        },
+        { type: 'form', tool: 'plugin_x_wipe', fields: [{ name: 'a', kind: 'text' }] },
+        { type: 'form', tool: 'plugin_f_profile', fields: [] },
+      ],
+      'user/f',
+    );
+    expect(blocks).toHaveLength(1);
+    const form = blocks[0] as Extract<(typeof blocks)[number], { type: 'form' }>;
+    expect(form).toMatchObject({ type: 'form', title: 'Profile', tool: 'plugin_f_profile', button: 'Save', args: { source: 'page' } });
+    expect(form.fields.map((f) => f.name)).toEqual(['weight', 'pain', 'level', 'notes', 'tower', 'nick']);
+    expect(form.fields[0]).toEqual({ name: 'weight', label: 'Weight', kind: 'number', unit: 'kg', min: 30, max: 250, step: 0.1, value: 250, required: true });
+    expect(form.fields[1]).toEqual({ name: 'pain', label: 'Shoulder pain', kind: 'slider', min: 0, max: 10, value: 10 });
+    expect(form.fields[2]).toEqual({
+      name: 'level',
+      label: 'Level',
+      kind: 'select',
+      options: [
+        { value: 'beginner', label: 'beginner' },
+        { value: 'pro', label: 'Pro' },
+      ],
+    });
+    expect(form.fields[3]!.maxLength).toBe(2000);
+    expect((form.fields[3]!.value as string).length).toBeLessThanOrEqual(2000);
+    expect(form.fields[4]).toEqual({ name: 'tower', label: 'Power tower', kind: 'toggle', value: false });
+    expect(form.fields[5]).toEqual({ name: 'nick', label: 'nick', kind: 'text', maxLength: 200 });
+  });
+});
+
+describe('page theme', () => {
+  it('renders the chosen preset and falls back to default for unknown ones', async () => {
+    plugin('user/t');
+    registerPluginPage('user/t', { id: 'glow', title: 'Glow', theme: 'hologram', icon: 'swords', render: () => [] });
+    registerPluginPage('user/t', { id: 'odd', title: 'Odd', theme: 'neon' as never, render: () => [] });
+    registerPluginPage('user/t', { id: 'plain', title: 'Plain', render: () => [] });
+    expect(await renderPluginPage('glow')).toMatchObject({ theme: 'hologram', icon: 'swords' });
+    expect(await renderPluginPage('odd')).toMatchObject({ theme: 'default' });
+    expect(await renderPluginPage('plain')).toMatchObject({ theme: 'default' });
+  });
+});
 
 describe('chart block', () => {
   it('aligns values to labels, turns junk into gaps and caps series', () => {

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Plugin pages: `figure` block.** A plugin can show an SVG drawing or
+  animation, with optional title, caption and bullet points, and fold it
+  away (`collapsed`). The dashboard draws it as an image (`<img>` from a
+  data URI), so the SVG can animate but never runs script or loads anything;
+  SVGs with scripts, event handlers, `foreignObject`, embedded images or
+  links outside the document are dropped on the server as well.
+- **Plugin pages: `form` block.** Several fields (text, textarea, number,
+  select, 0–10 slider, toggle) submit to one of the plugin's own tools in a
+  single call, for questionnaires and settings.
+- **Plugin pages: theme presets.** `registerPage({ theme: 'hologram' })`
+  gives that page a dark blue palette with a cyan glow. The sidebar and other
+  pages keep the default look; plugins still never ship CSS.
+- Page icon `swords`.
+
+### Changed
+
+- The dashboard palette is defined as CSS variables, which is what lets a
+  page switch preset. Default colours are unchanged; plugin charts follow
+  the page palette.
+
 ## [0.12.1] — 2026-11-26
 
 The dead-end hook stays quiet when nothing relevant matches.
